@@ -11,7 +11,7 @@ mod timer;
 mod tray;
 
 use std::fs::File;
-use std::sync::atomic::AtomicI64;
+use std::sync::atomic::{AtomicBool, AtomicI64};
 use std::thread;
 use std::time::Duration;
 
@@ -30,6 +30,9 @@ pub struct AppState {
     pub stats: Mutex<Stats>,
     pub remaining_sec: AtomicI64,
     pub overlay: overlay::OverlayManager,
+    /// 文件对话框（「+ 我的音效」）打开期间为 true：面板让出 key window
+    /// 是预期行为，此时不应触发失焦自动隐藏。
+    pub dialog_open: AtomicBool,
     /// None on machines without an audio device; playback is then a no-op.
     pub audio: Option<std::sync::Arc<audio::Audio>>,
 }
@@ -47,6 +50,7 @@ impl AppState {
             stats: Mutex::new(settings::load_stats(app)),
             remaining_sec: AtomicI64::new(remaining),
             overlay: Default::default(),
+            dialog_open: AtomicBool::new(false),
             audio,
         }
     }
@@ -132,12 +136,37 @@ fn list_sounds(app: AppHandle) -> Vec<SoundInfo> {
 }
 
 #[tauri::command]
-fn import_sound(app: AppHandle) -> Option<Vec<SoundInfo>> {
-    let picked = app
+async fn import_sound(app: AppHandle) -> Option<Vec<SoundInfo>> {
+    // 不能用 blocking_pick_file：tauri 命令在非主线程执行，而 rfd 的同步
+    // 阻塞对话框在 macOS 上只能在主线程运行——对话框弹出后 AppKit 事件循环
+    // 被卡死，整个 app 无响应。改用回调式异步对话框 + channel 等待结果。
+    let (tx, mut rx) = tauri::async_runtime::channel(1);
+    let mut dlg = app
         .dialog()
         .file()
-        .add_filter("Audio", &["wav", "mp3", "ogg", "flac"])
-        .blocking_pick_file()?;
+        .add_filter("Audio", &["wav", "mp3", "ogg", "flac"]);
+    // 挂到面板窗口上：macOS 以 sheet 形式附着在面板（独立窗口会跑到主桌面
+    // Space——用户在全屏 Space 里看不到也点不到）；挂接后面板让出 key window
+    // 属预期，打开期间暂停面板的失焦自动隐藏。
+    let panel = app.get_webview_window("panel");
+    if let Some(p) = &panel {
+        dlg = dlg.set_parent(p);
+    }
+    app.state::<AppState>()
+        .dialog_open
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    dlg.pick_file(move |picked| {
+        let _ = tx.try_send(picked);
+    });
+    let picked = rx.recv().await.flatten();
+    app.state::<AppState>()
+        .dialog_open
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+    if let Some(p) = &panel {
+        // 恢复面板 key 状态，之后点击他处才能正常触发失焦隐藏。
+        let _ = p.set_focus();
+    }
+    let picked = picked?;
     let src = picked.as_path()?.to_path_buf();
     let name = src.file_name()?.to_os_string();
     let dst = settings::user_sound_dir(&app).join(name);
