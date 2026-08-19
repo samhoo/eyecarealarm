@@ -12,7 +12,7 @@ import {
   remindNow,
   updateSettings,
 } from "../shared/ipc";
-import { t } from "../shared/i18n";
+import { LANGS, t } from "../shared/i18n";
 import type { Settings, SoundInfo, TimerState } from "../shared/types";
 import { Switch } from "./components/Switch";
 import { Stepper } from "./components/Stepper";
@@ -136,10 +136,7 @@ export default function App() {
     previewSound(id).catch(() => {});
   };
 
-  const langOptions: DropdownOption[] = [
-    { id: "zh-CN", name: t("zh-CN").langName },
-    { id: "en", name: t("en").langName },
-  ];
+  const langOptions: DropdownOption[] = LANGS.map((l) => ({ id: l, name: t(l).langName }));
 
   return (
     <>

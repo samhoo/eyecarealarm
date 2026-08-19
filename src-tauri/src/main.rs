@@ -60,10 +60,20 @@ pub struct OverlayPayload {
 }
 
 pub fn detect_lang() -> String {
-    match sys_locale::get_locale() {
-        Some(l) if l.to_lowercase().starts_with("zh") => "zh-CN".into(),
-        _ => "en".into(),
+    let l = sys_locale::get_locale().unwrap_or_default().to_lowercase();
+    if l.starts_with("zh") {
+        return if l.contains("tw") || l.contains("hk") || l.contains("hant") {
+            "zh-TW".into()
+        } else {
+            "zh-CN".into()
+        };
     }
+    for lang in ["pt", "es", "ru", "fr", "ko", "de", "ja"] {
+        if l.starts_with(lang) {
+            return lang.into();
+        }
+    }
+    "en".into()
 }
 
 // ---------- commands ----------

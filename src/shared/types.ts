@@ -1,5 +1,7 @@
 /** Shared IPC contract between Rust backend and the three webview windows. */
 
+import type { Lang } from "./i18n";
+
 export interface Settings {
   /** 提醒休息眼睛 master switch */
   enabled: boolean;
@@ -13,7 +15,7 @@ export interface Settings {
   volume: number;
   /** sound id: "none" | file stem of a wav/mp3 in builtin or user sound dir */
   sound: string;
-  lang: "zh-CN" | "en";
+  lang: Lang;
   autostart: boolean;
 }
 
@@ -46,7 +48,7 @@ export interface SoundInfo {
 export interface OverlayPayload {
   overlay_opacity: number;
   rest_sec: number;
-  lang: "zh-CN" | "en";
+  lang: Lang;
 }
 
 /** Overlay timeline constants (seconds since overlay appear). */

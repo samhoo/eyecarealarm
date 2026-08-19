@@ -40,12 +40,14 @@ impl Default for Settings {
 
 impl Settings {
     pub fn clamped(mut self) -> Self {
+        const LANGS: [&str; 10] =
+            ["zh-CN", "zh-TW", "en", "pt", "es", "ru", "fr", "ko", "de", "ja"];
         self.interval_min = self.interval_min.clamp(20, 120);
         self.rest_sec = self.rest_sec.clamp(5, 60);
         self.overlay_opacity = self.overlay_opacity.min(100);
         self.volume = self.volume.min(100);
-        if self.lang != "en" {
-            self.lang = "zh-CN".into();
+        if !LANGS.contains(&self.lang.as_str()) {
+            self.lang = crate::detect_lang();
         }
         self
     }
