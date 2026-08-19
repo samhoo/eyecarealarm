@@ -4,11 +4,12 @@ import { t } from "../shared/i18n";
 import { TIMELINE, type OverlayPayload } from "../shared/types";
 
 /**
- * 文字1（warmupText）子时刻：0-2s 渐显，保持到 warmupEnd-0.5，最后 0.5s 渐隐。
- * TIMELINE 只定义阶段边界，这两个细分点源自设计原型。
+ * 文字1（warmupText）：0-2s 渐显，2-4s 全显，4-5s 渐隐（1s）。
+ * 文字2（restText）：text2Start(4)-6s 渐显（2s），其中 4-5s 与文字1 渐隐交叉淡化。
  */
 const TEXT1_IN_END = 2;
-const TEXT1_HOLD_END = TIMELINE.warmupEnd - 0.5;
+const TEXT1_HOLD_END = TIMELINE.warmupEnd - 1;
+const TEXT2_FADE = 2;
 
 export default function App() {
   const [payload, setPayload] = useState<OverlayPayload | null>(null);
@@ -72,7 +73,6 @@ export default function App() {
     if (!payload) return;
     /* 设置值为透明度 %：100 = 全透明 → 黑幕不透明度 = (100 - overlay_opacity) / 100 */
     const dimTarget = (100 - payload.overlay_opacity) / 100;
-    const text2Fade = TIMELINE.blockStart - TIMELINE.text2Start;
     const stopAt = TIMELINE.naturalEnd + TIMELINE.fadeOutMs / 1000 + 0.5;
     const t0 = performance.now();
 
@@ -100,11 +100,7 @@ export default function App() {
       const p2 = text2Ref.current;
       if (p2) {
         const o =
-          tSec < TIMELINE.text2Start
-            ? 0
-            : tSec < TIMELINE.blockStart
-              ? (tSec - TIMELINE.text2Start) / text2Fade
-              : 1;
+          tSec < TIMELINE.text2Start ? 0 : (tSec - TIMELINE.text2Start) / TEXT2_FADE;
         p2.style.opacity = String(Math.min(1, Math.max(0, o)));
       }
 

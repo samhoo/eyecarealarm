@@ -52,7 +52,7 @@ export interface OverlayPayload {
 /** Overlay timeline constants (seconds since overlay appear). */
 export const TIMELINE = {
   warmupEnd: 5, // 0-5s: click-through, opacity ramps 0 -> set value
-  text2Start: 6, // 6-8s: second text fades in
+  text2Start: 4, // 4-6s: second text fades in, cross-fading with text1 fade-out (4-5s)
   blockStart: 8, // 8s: input blocked, Esc armed, audio starts, countdown starts
   naturalEnd: 27, // 27s: auto close begins
   fadeOutMs: 1000, // close fade duration
