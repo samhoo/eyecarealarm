@@ -79,7 +79,8 @@ body {
   gap: 10px;
 }
 .row .label { flex: none; }
-.settings .label { width: 80px; }
+/* min-width 保持中文短 label 的列对齐；英文长 label 自然撑开，nowrap 禁止换行 */
+.settings .label { min-width: 80px; flex: none; white-space: nowrap; }
 
 .spacer { flex: 1; }
 
