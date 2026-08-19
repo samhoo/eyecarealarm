@@ -45,12 +45,17 @@ body {
 }
 
 /* 两段文字同一容器绝对定位叠放，避免布局跳动 */
+/* left:0+right:0+margin:auto 居中：left:50% 会让 shrink-to-fit 可用宽度只剩右半屏 */
+/* 宽度按最长语言（俄/德 ~85 字符 @30px ≈ 1280px）设定，尽量单行显示 */
 .phase {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 46%;
-  transform: translate(-50%, -50%);
-  max-width: min(640px, 88vw);
+  transform: translateY(-50%);
+  margin: 0 auto;
+  width: fit-content;
+  max-width: min(1400px, 95vw);
   color: var(--veil-fg);
   font-size: 30px;
   font-weight: 550;
