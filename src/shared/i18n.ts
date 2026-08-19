@@ -47,7 +47,6 @@ export interface Messages {
   exitBtn: (n: number) => string;
   noSound: string;
   importSound: string;
-  knowledgeNA: string;
   langName: string;
 }
 
@@ -66,7 +65,7 @@ const dict: Record<Lang, Messages> = {
     volume: "音量",
     language: "语言",
     autostart: "开机自启动",
-    moreKnowledge: "更多护眼知识",
+    moreKnowledge: "查看20-20-20护眼法则",
     about: "关于 EyeCareAlarm",
     version: "version 0.1.23",
     quit: "退出 EyeCareAlarm",
@@ -76,7 +75,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `退出 (Esc) ${n}秒`,
     noSound: "无音效",
     importSound: "+ 我的音效",
-    knowledgeNA: "护眼知识页面尚未配置",
     langName: "简体中文",
   },
   "zh-TW": {
@@ -93,7 +91,7 @@ const dict: Record<Lang, Messages> = {
     volume: "音量",
     language: "語言",
     autostart: "開機自動啟動",
-    moreKnowledge: "更多護眼知識",
+    moreKnowledge: "查看20-20-20護眼法則",
     about: "關於 EyeCareAlarm",
     version: "version 0.1.23",
     quit: "退出 EyeCareAlarm",
@@ -103,7 +101,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `退出 (Esc) ${n}秒`,
     noSound: "無音效",
     importSound: "+ 我的音效",
-    knowledgeNA: "護眼知識頁面尚未設定",
     langName: "繁體中文",
   },
   en: {
@@ -120,7 +117,7 @@ const dict: Record<Lang, Messages> = {
     volume: "Volume",
     language: "Language",
     autostart: "Launch at startup",
-    moreKnowledge: "More eye-care tips",
+    moreKnowledge: "Learn about the 20-20-20 rule",
     about: "About EyeCareAlarm",
     version: "version 0.1.23",
     quit: "Quit EyeCareAlarm",
@@ -130,7 +127,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `Exit (Esc) ${n}s`,
     noSound: "No sound",
     importSound: "+ My sound",
-    knowledgeNA: "Eye-care page not configured yet",
     langName: "English",
   },
   pt: {
@@ -147,7 +143,7 @@ const dict: Record<Lang, Messages> = {
     volume: "Volume",
     language: "Idioma",
     autostart: "Iniciar com o sistema",
-    moreKnowledge: "Mais dicas de cuidado visual",
+    moreKnowledge: "Saiba mais sobre a regra 20-20-20",
     about: "Sobre o EyeCareAlarm",
     version: "version 0.1.23",
     quit: "Sair do EyeCareAlarm",
@@ -157,7 +153,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `Sair (Esc) ${n}s`,
     noSound: "Sem som",
     importSound: "+ Meu som",
-    knowledgeNA: "Página de cuidado visual ainda não configurada",
     langName: "Português",
   },
   es: {
@@ -174,7 +169,7 @@ const dict: Record<Lang, Messages> = {
     volume: "Volumen",
     language: "Idioma",
     autostart: "Iniciar con el sistema",
-    moreKnowledge: "Más consejos para el cuidado visual",
+    moreKnowledge: "Consulta la regla 20-20-20",
     about: "Acerca de EyeCareAlarm",
     version: "version 0.1.23",
     quit: "Salir de EyeCareAlarm",
@@ -184,7 +179,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `Salir (Esc) ${n}s`,
     noSound: "Sin sonido",
     importSound: "+ Mi sonido",
-    knowledgeNA: "Página de cuidado visual aún no configurada",
     langName: "Español",
   },
   ru: {
@@ -201,7 +195,7 @@ const dict: Record<Lang, Messages> = {
     volume: "Громкость",
     language: "Язык",
     autostart: "Автозапуск при входе",
-    moreKnowledge: "Больше о заботе о глазах",
+    moreKnowledge: "О правиле 20-20-20 для глаз",
     about: "О программе EyeCareAlarm",
     version: "version 0.1.23",
     quit: "Выйти из EyeCareAlarm",
@@ -211,7 +205,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `Выход (Esc) ${n}с`,
     noSound: "Без звука",
     importSound: "+ Мой звук",
-    knowledgeNA: "Страница о заботе о глазах пока не настроена",
     langName: "Русский",
   },
   fr: {
@@ -228,7 +221,7 @@ const dict: Record<Lang, Messages> = {
     volume: "Volume",
     language: "Langue",
     autostart: "Démarrage automatique",
-    moreKnowledge: "Plus de conseils pour les yeux",
+    moreKnowledge: "Découvrir la règle 20-20-20",
     about: "À propos d'EyeCareAlarm",
     version: "version 0.1.23",
     quit: "Quitter EyeCareAlarm",
@@ -238,7 +231,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `Quitter (Esc) ${n}s`,
     noSound: "Aucun son",
     importSound: "+ Mon son",
-    knowledgeNA: "Page de conseils non configurée",
     langName: "Français",
   },
   ko: {
@@ -255,7 +247,7 @@ const dict: Record<Lang, Messages> = {
     volume: "볼륨",
     language: "언어",
     autostart: "시작 시 자동 실행",
-    moreKnowledge: "눈 건강 정보 더 보기",
+    moreKnowledge: "20-20-20 눈 건강 규칙 보기",
     about: "EyeCareAlarm 정보",
     version: "version 0.1.23",
     quit: "EyeCareAlarm 종료",
@@ -265,7 +257,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `종료 (Esc) ${n}초`,
     noSound: "무음",
     importSound: "+ 내 효과음",
-    knowledgeNA: "눈 건강 페이지가 아직 설정되지 않았습니다",
     langName: "한국어",
   },
   de: {
@@ -282,7 +273,7 @@ const dict: Record<Lang, Messages> = {
     volume: "Lautstärke",
     language: "Sprache",
     autostart: "Beim Anmelden starten",
-    moreKnowledge: "Mehr Augenpflege-Tipps",
+    moreKnowledge: "Zur 20-20-20-Regel für die Augen",
     about: "Über EyeCareAlarm",
     version: "version 0.1.23",
     quit: "EyeCareAlarm beenden",
@@ -292,7 +283,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `Beenden (Esc) ${n}s`,
     noSound: "Kein Klang",
     importSound: "+ Mein Klang",
-    knowledgeNA: "Augenpflege-Seite noch nicht konfiguriert",
     langName: "Deutsch",
   },
   ja: {
@@ -309,7 +299,7 @@ const dict: Record<Lang, Messages> = {
     volume: "音量",
     language: "言語",
     autostart: "ログイン時に起動",
-    moreKnowledge: "目のケア情報をもっと見る",
+    moreKnowledge: "20-20-20 ルールを見る",
     about: "EyeCareAlarm について",
     version: "version 0.1.23",
     quit: "EyeCareAlarm を終了",
@@ -319,7 +309,6 @@ const dict: Record<Lang, Messages> = {
     exitBtn: (n) => `終了 (Esc) ${n}秒`,
     noSound: "音なし",
     importSound: "+ マイサウンド",
-    knowledgeNA: "目のケアページはまだ設定されていません",
     langName: "日本語",
   },
 };

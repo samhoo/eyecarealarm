@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   getSettings,
   getTimerState,
@@ -20,6 +21,7 @@ import { Slider } from "./components/Slider";
 import { Dropdown, type DropdownOption } from "./components/Dropdown";
 
 const IMPORT_ID = "__import__";
+const KNOWLEDGE_URL = "https://www.healthline.com/health/eye-health/20-20-20-rule";
 
 /** Renders the header line with every digit run in the mono style. */
 function renderHeader(text: string) {
@@ -40,9 +42,7 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sounds, setSounds] = useState<SoundInfo[]>([]);
   const [timer, setTimer] = useState<TimerState | null>(null);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const toastTimerRef = useRef<number | undefined>(undefined);
 
   // Initial load + event subscriptions.
   useEffect(() => {
@@ -87,13 +87,6 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [enabled, lang]);
 
-  useEffect(
-    () => () => {
-      window.clearTimeout(toastTimerRef.current);
-    },
-    []
-  );
-
   if (!settings) {
     // Settings not loaded yet: keep an empty 320px panel so the window size stays stable.
     return <div className="panel" ref={panelRef} />;
@@ -106,12 +99,6 @@ export default function App() {
     updateSettings(p)
       .then((s) => setSettings(s))
       .catch(console.error);
-
-  const showToast = (text: string) => {
-    setToastMsg(text);
-    window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 1600);
-  };
 
   const soundOptions: DropdownOption[] = [
     { id: "none", name: msg.noSound },
@@ -271,12 +258,14 @@ export default function App() {
             type="button"
             className="menu-row"
             id="link-knowledge"
-            onClick={() => showToast(msg.knowledgeNA)}
+            onClick={() => openUrl(KNOWLEDGE_URL).catch(console.error)}
           >
             {msg.moreKnowledge}
             <span className="chev">
-              <svg viewBox="0 0 8 8">
-                <path d="M2.5 1 5.5 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
               </svg>
             </span>
           </button>
@@ -288,8 +277,6 @@ export default function App() {
           </button>
         </footer>
       </div>
-
-      <div className={`toast${toastMsg ? " show" : ""}`}>{toastMsg}</div>
     </>
   );
 }

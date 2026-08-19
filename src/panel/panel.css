@@ -350,23 +350,3 @@ body {
   color: var(--muted);
   opacity: 0.8;
 }
-
-/* ---------- toast ---------- */
-.toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translate(-50%, 8px);
-  background: #1e2226; /* oklch(0.25 0.01 250) */
-  color: #fff;
-  font-size: 12.5px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  z-index: 50;
-  white-space: nowrap;
-}
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
