@@ -14,8 +14,22 @@
   --danger-soft: rgba(204, 50, 62, 0.08);   /* oklch(0.56 0.19 22 / 0.08) */
   --row-hover:   #e6e8ea;              /* oklch(0.93 0.004 250) */
   --track:       #d3d6da;              /* oklch(0.875 0.006 250) */
+  --switch-off:  #c1c4c8;              /* oklch(0.82 0.006 250) */
   --mono: "SF Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+}
+
+/* macOS：面板底色对齐原生菜单栏面板（NSMenu/控制中心材质，本机实测 ≈ #E3E2EA，
+   比设计稿的浅色面板略深、偏薰衣草灰）。灰阶 token 整体同比例下移保持层次；
+   强调色/文字色不变。Windows 保持设计稿原色。 */
+html[data-platform="macos"] {
+  --bg:          #e6e5ed;
+  --surface:     #e3e2ea;
+  --border:      #d0d0d8;
+  --border-soft: #dcdce3;
+  --row-hover:   #dadae2;
+  --track:       #c7c8d2;
+  --switch-off:  #b5b6c0;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -95,7 +109,7 @@ body {
   width: 34px;
   height: 20px;
   border-radius: 10px;
-  background: #c1c4c8; /* oklch(0.82 0.006 250) */
+  background: var(--switch-off);
   border: none;
   cursor: pointer;
   position: relative;

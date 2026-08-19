@@ -33,11 +33,11 @@ fn hide_traffic_lights(w: &WebviewWindow) {
             }
         }
         // 隐藏标题栏区域仍会按窗口背景色画出一条稍亮的横带；把窗口背景
-        // 设为面板同色（--surface #eff0f2），整条标题带与面板融为一体。
+        // 设为面板同色（macOS --surface #E3E2EA），整条标题带与面板融为一体。
         let surface = NSColor::colorWithSRGBRed_green_blue_alpha(
-            239.0 / 255.0,
-            240.0 / 255.0,
-            242.0 / 255.0,
+            227.0 / 255.0,
+            226.0 / 255.0,
+            234.0 / 255.0,
             1.0,
         );
         ns.setBackgroundColor(Some(&surface));
@@ -133,9 +133,9 @@ fn toggle_panel(app: &AppHandle, tray_x: f64, tray_y: f64, icon_rect: tauri::Rec
             // 下沿弹出，像原生菜单一样，而不是按点击 y 偏移（会留出飘变的缝隙）。
             let scale = mon.scale_factor();
             y = mp.y as f64 + 24.0 * scale;
-            // 水平方向与原生菜单栏面板一致——不居中，按图标左右剩余空间对齐：
-            // 图标左缘到屏幕右缘放得下面板 → 左对齐（面板左缘 = 图标左缘）；
-            // 否则右对齐（面板右缘 = 图标右缘）；都放不下才退化为屏幕内夹取。
+            // 水平方向与原生菜单栏面板一致——优先左对齐（面板左缘 = 图标左缘）；
+            // 右侧空间不足则与图标居中对齐；仍不足则右对齐（面板右缘 = 图标右缘）；
+            // 最后兜底为屏幕内夹取。
             let panel_w = size.width as f64;
             let icon_pos = icon_rect.position.to_physical::<f64>(scale);
             let icon_size = icon_rect.size.to_physical::<f64>(scale);
@@ -143,12 +143,16 @@ fn toggle_panel(app: &AppHandle, tray_x: f64, tray_y: f64, icon_rect: tauri::Rec
             let icon_right = icon_left + icon_size.width;
             let screen_left = mp.x as f64;
             let screen_right = screen_left + ms.width as f64;
-            let space_right = screen_right - icon_left;
-            let space_left = icon_right - screen_left;
-            x = if space_right >= panel_w && space_right >= space_left {
-                icon_left
-            } else if space_left >= panel_w {
-                icon_right - panel_w
+            let fits = |left: f64| left >= screen_left + 4.0 && left + panel_w <= screen_right - 4.0;
+            let x_left = icon_left;
+            let x_center = icon_left + (icon_size.width - panel_w) / 2.0;
+            let x_right = icon_right - panel_w;
+            x = if fits(x_left) {
+                x_left
+            } else if fits(x_center) {
+                x_center
+            } else if fits(x_right) {
+                x_right
             } else {
                 (screen_right - panel_w - 4.0).max(screen_left + 4.0)
             };
