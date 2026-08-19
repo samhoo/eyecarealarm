@@ -14,19 +14,65 @@ use tauri::{AppHandle, Manager, PhysicalPosition, WebviewUrl, WebviewWindow, Web
 
 const PANEL_W: f64 = 360.0;
 
+/// Hide the traffic-light buttons (close/min/zoom) of a decorated macOS
+/// window — the panel wants native rounded corners + shadow but no titlebar
+/// controls (design: 原生托盘弹窗，无窗口按钮).
+#[cfg(target_os = "macos")]
+fn hide_traffic_lights(w: &WebviewWindow) {
+    use objc2_app_kit::{NSColor, NSWindow, NSWindowButton};
+    if let Ok(ptr) = w.ns_window() {
+        // SAFETY: tauri returns the window's live NSWindow on macOS.
+        let ns = unsafe { &*(ptr as *const NSWindow) };
+        for b in [
+            NSWindowButton::CloseButton,
+            NSWindowButton::MiniaturizeButton,
+            NSWindowButton::ZoomButton,
+        ] {
+            if let Some(btn) = ns.standardWindowButton(b) {
+                btn.setHidden(true);
+            }
+        }
+        // 隐藏标题栏区域仍会按窗口背景色画出一条稍亮的横带；把窗口背景
+        // 设为面板同色（--surface #eff0f2），整条标题带与面板融为一体。
+        let surface = NSColor::colorWithSRGBRed_green_blue_alpha(
+            239.0 / 255.0,
+            240.0 / 255.0,
+            242.0 / 255.0,
+            1.0,
+        );
+        ns.setBackgroundColor(Some(&surface));
+    }
+}
+
 /// Panel window, created hidden at setup; shown by tray clicks.
 pub fn create_panel(app: &AppHandle) -> tauri::Result<WebviewWindow> {
-    let panel = WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
+    let builder = WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
         .title("EyeCareAlarm")
         .inner_size(PANEL_W, 560.0)
         .resizable(false)
-        .decorations(false)
-        .transparent(true)
         .shadow(true)
         .always_on_top(true)
         .skip_taskbar(true)
-        .visible(false)
-        .build()?;
+        .visible(false);
+    // macOS: decorated window with hidden titlebar. Native rounded corners +
+    // shadow come from AppKit — a transparent borderless window would need
+    // CSS-drawn corners, but this machine's WKWebView drops fully-opaque
+    // background layers on transparent windows (only text/borders paint),
+    // so the CSS-corner approach is not viable here.
+    #[cfg(target_os = "macos")]
+    let builder = builder
+        .decorations(true)
+        .hidden_title(true)
+        // Overlay = titlebarAppearsTransparent + fullSizeContentView：去掉标题栏
+        // 背景带和分隔线，内容延伸到窗口顶部（hidden_title 只藏标题文字）。
+        .title_bar_style(tauri::TitleBarStyle::Overlay);
+    // Windows: borderless + opaque; Win11 DWM rounds the corners and the CSS
+    // 1px border reads like the design's edge stroke.
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.decorations(false);
+    let panel = builder.build()?;
+    #[cfg(target_os = "macos")]
+    hide_traffic_lights(&panel);
 
     let p = panel.clone();
     panel.on_window_event(move |e| {
@@ -48,6 +94,7 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 button,
                 button_state,
                 position,
+                rect,
                 ..
             } = event
             else {
@@ -59,13 +106,14 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             if !matches!(button, MouseButton::Left | MouseButton::Right) {
                 return;
             }
-            toggle_panel(tray.app_handle(), position.x, position.y);
+            toggle_panel(tray.app_handle(), position.x, position.y, rect);
         })
         .build(app)?;
     Ok(())
 }
 
-fn toggle_panel(app: &AppHandle, tray_x: f64, tray_y: f64) {
+fn toggle_panel(app: &AppHandle, tray_x: f64, tray_y: f64, icon_rect: tauri::Rect) {
+    let _ = &icon_rect; // only macOS uses the icon rect for alignment
     let Some(panel) = app.get_webview_window("panel") else {
         return;
     };
@@ -79,15 +127,44 @@ fn toggle_panel(app: &AppHandle, tray_x: f64, tray_y: f64) {
     if let Ok(Some(mon)) = app.monitor_from_point(tray_x, tray_y) {
         let mp = mon.position();
         let ms = mon.size();
-        let upper_half = tray_y < mp.y as f64 + ms.height as f64 / 2.0;
-        y = if upper_half {
-            tray_y + 24.0 // macOS menu bar: drop below the icon
-        } else {
-            tray_y - size.height as f64 - 8.0 // taskbar: pop above the icon
-        };
+        #[cfg(target_os = "macos")]
+        {
+            // macOS 菜单栏恒在屏幕顶部（24pt，与点击位置无关）：面板紧贴菜单栏
+            // 下沿弹出，像原生菜单一样，而不是按点击 y 偏移（会留出飘变的缝隙）。
+            let scale = mon.scale_factor();
+            y = mp.y as f64 + 24.0 * scale;
+            // 水平方向与原生菜单栏面板一致——不居中，按图标左右剩余空间对齐：
+            // 图标左缘到屏幕右缘放得下面板 → 左对齐（面板左缘 = 图标左缘）；
+            // 否则右对齐（面板右缘 = 图标右缘）；都放不下才退化为屏幕内夹取。
+            let panel_w = size.width as f64;
+            let icon_pos = icon_rect.position.to_physical::<f64>(scale);
+            let icon_size = icon_rect.size.to_physical::<f64>(scale);
+            let icon_left = icon_pos.x;
+            let icon_right = icon_left + icon_size.width;
+            let screen_left = mp.x as f64;
+            let screen_right = screen_left + ms.width as f64;
+            let space_right = screen_right - icon_left;
+            let space_left = icon_right - screen_left;
+            x = if space_right >= panel_w && space_right >= space_left {
+                icon_left
+            } else if space_left >= panel_w {
+                icon_right - panel_w
+            } else {
+                (screen_right - panel_w - 4.0).max(screen_left + 4.0)
+            };
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let upper_half = tray_y < mp.y as f64 + ms.height as f64 / 2.0;
+            y = if upper_half {
+                tray_y + 24.0 // top taskbar: drop below the icon
+            } else {
+                tray_y - size.height as f64 - 8.0 // bottom taskbar: pop above the icon
+            };
+            y = y.clamp(mp.y as f64 + 4.0, mp.y as f64 + ms.height as f64 - size.height as f64 - 4.0);
+        }
         // clamp into the monitor
         x = x.clamp(mp.x as f64 + 4.0, mp.x as f64 + ms.width as f64 - size.width as f64 - 4.0);
-        y = y.clamp(mp.y as f64 + 4.0, mp.y as f64 + ms.height as f64 - size.height as f64 - 4.0);
     }
     let _ = panel.set_position(PhysicalPosition::new(x as i32, y as i32));
     let _ = panel.show();

@@ -53,6 +53,29 @@ struct ClosePayload {
     fade_ms: u64,
 }
 
+/// macOS: make the overlay a true full-screen shield. tao's always_on_top is
+/// only NSFloatingWindowLevel (3), below the menu bar (24) — the menu bar
+/// would stay visible above the veil. CGShieldingWindowLevel is the level
+/// AppKit uses for display capture, covering the menu bar; CanJoinAllSpaces +
+/// Stationary keep the veil present across spaces, FullScreenAuxiliary lets
+/// it sit on fullscreen spaces.
+#[cfg(target_os = "macos")]
+fn make_shield(w: &tauri::WebviewWindow) {
+    use objc2_app_kit::{NSWindow, NSWindowCollectionBehavior};
+    if let Ok(ptr) = w.ns_window() {
+        // SAFETY: tauri returns the window's live NSWindow on macOS.
+        unsafe {
+            let ns = &*(ptr as *const NSWindow);
+            ns.setLevel(core_graphics::display::CGShieldingWindowLevel() as isize);
+            ns.setCollectionBehavior(
+                NSWindowCollectionBehavior::CanJoinAllSpaces
+                    | NSWindowCollectionBehavior::Stationary
+                    | NSWindowCollectionBehavior::FullScreenAuxiliary,
+            );
+        }
+    }
+}
+
 fn monitor_rect(m: &tauri::Monitor) -> (f64, f64, f64, f64) {
     let scale = m.scale_factor();
     (
@@ -86,6 +109,8 @@ pub fn create_windows(app: &AppHandle) {
             .build();
         match win {
             Ok(w) => {
+                #[cfg(target_os = "macos")]
+                make_shield(&w);
                 let _ = w.set_ignore_cursor_events(true);
                 labels.push(label);
             }

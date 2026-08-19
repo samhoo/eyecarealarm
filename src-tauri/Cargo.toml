@@ -22,7 +22,7 @@ rodio = { version = "0.21", default-features = false, features = [
     # symphonia-mp3 (default) decodes MPEG-2 24kHz files to silence; minimp3 handles them.
     "minimp3",
 ] }
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
 tauri-build = { version = "2", features = [] }
 tauri-plugin-autostart = "2"
 tauri-plugin-dialog = "2"
@@ -39,6 +39,10 @@ windows = { version = "0.61", features = [
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"
 core-foundation = "0.10"
+# Same version tao/wry pull in — feature-unified, no extra build cost.
+# Used for NSWindow tweaks: overlay shield level above the menu bar, and
+# hiding the panel's traffic-light buttons.
+objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSButton", "NSControl", "NSView", "NSColor"] }
 
 [profile.release]
 panic = "abort"

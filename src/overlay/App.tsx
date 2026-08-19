@@ -81,9 +81,11 @@ export default function App() {
 
       const dim = dimRef.current;
       if (dim) {
-        /* 0-warmupEnd：0 线性升至目标值，之后保持 */
+        /* 0-warmupEnd：0 线性升至目标值，之后保持。
+           上限 0.999：macOS 12 WKWebView 在透明窗口上会丢失完全不透明
+           (alpha=1) 的大背景层（遮罩透明度设 0% 时 dimTarget=1 会隐形）。 */
         dim.style.opacity = String(
-          Math.min(dimTarget, dimTarget * (tSec / TIMELINE.warmupEnd))
+          Math.min(0.999, dimTarget, dimTarget * (tSec / TIMELINE.warmupEnd))
         );
       }
 
