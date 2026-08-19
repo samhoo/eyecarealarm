@@ -77,7 +77,15 @@ pub fn create_panel(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let p = panel.clone();
     panel.on_window_event(move |e| {
         if let WindowEvent::Focused(false) = e {
-            let _ = p.hide();
+            // 文件对话框（sheet/模态）打开期间面板让出焦点是预期行为，不隐藏
+            let dialog_open = p
+                .app_handle()
+                .state::<crate::AppState>()
+                .dialog_open
+                .load(std::sync::atomic::Ordering::SeqCst);
+            if !dialog_open {
+                let _ = p.hide();
+            }
         }
     });
     Ok(panel)
