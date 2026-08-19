@@ -1,0 +1,48 @@
+:root {
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  --accent: oklch(0.66 0.13 172);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  background: transparent;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- 启动提示条（原型 .toast 视觉） ---------- */
+.toast-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: oklch(0.25 0.01 250);
+  color: #fff;
+  font-size: 12.5px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px oklch(0 0 0 / 0.3);
+  white-space: nowrap;
+}
+
+.toast-bar .eye {
+  flex: none;
+  color: var(--accent);
+}

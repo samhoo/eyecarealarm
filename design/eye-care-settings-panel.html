@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EyeCareAlarm — 设置</title>
+<style>
+  :root {
+    --bg:          oklch(0.965 0.002 250);
+    --surface:     oklch(0.955 0.003 250);
+    --fg:          oklch(0.23 0.008 250);
+    --muted:       oklch(0.53 0.008 250);
+    --border:      oklch(0.9 0.004 250);
+    --border-soft: oklch(0.935 0.003 250);
+    --accent:      oklch(0.66 0.13 172);
+    --accent-soft: oklch(0.66 0.13 172 / 0.12);
+    --accent-text: oklch(0.5 0.12 172);
+    --danger:      oklch(0.56 0.19 22);
+    --danger-soft: oklch(0.56 0.19 22 / 0.08);
+    --row-hover:   oklch(0.93 0.004 250);
+    --track:       oklch(0.875 0.006 250);
+    --mono: "SF Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--sans);
+    color: var(--fg);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- panel ---------- */
+  .panel {
+    width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.06), 0 8px 24px oklch(0 0 0 / 0.16), 0 24px 60px oklch(0 0 0 / 0.18);
+    overflow: hidden;
+    user-select: none;
+    font-size: 13px;
+  }
+
+  .panel.is-disabled .settings,
+  .panel.is-disabled #divider-mid,
+  .panel.is-disabled #link-knowledge,
+  .panel.is-disabled .about-row { display: none; }
+  /* 倒计时隐藏但保留占位，确保主开关行绝对位置不变 */
+  .panel.is-disabled .countdown { visibility: hidden; }
+
+  /* ---------- header ---------- */
+  .header { padding: 12px 14px 8px; }
+
+  .countdown {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 12.5px;
+    padding-bottom: 4px;
+    margin-bottom: 2px;
+  }
+  .countdown .mono {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown .eye {
+    margin-right: 2px;
+    color: var(--accent-text);
+    align-self: center;
+    flex: none;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    gap: 10px;
+  }
+  .row .label { flex: none; }
+  .settings .label { width: 80px; }
+
+  .spacer { flex: 1; }
+
+  /* ---------- switch ---------- */
+  .switch {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 34px;
+    height: 20px;
+    border-radius: 10px;
+    background: oklch(0.82 0.006 250);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    flex: none;
+    transition: background 0.18s ease;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.25);
+    transition: transform 0.18s ease;
+  }
+  .switch[aria-checked="true"] { background: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(14px); }
+  .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- divider ---------- */
+  .divider { height: 1px; background: var(--border); }
+
+  /* ---------- settings ---------- */
+  .settings { padding: 6px 14px 4px; display: flex; flex-direction: column; gap: 2px; }
+
+  /* action row（立即提醒） */
+  .action-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 34px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--fg);
+    cursor: pointer;
+    text-align: left;
+    border-radius: 6px;
+  }
+  .action-row:hover { background: var(--row-hover); }
+  .action-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* stepper */
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .stepper:focus-within { border-color: var(--accent); }
+  .stepper input {
+    width: 44px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    text-align: center;
+    color: var(--fg);
+    padding: 5px 0 5px 4px;
+  }
+  .stepper input:focus-visible { background: var(--accent-soft); }
+  .stepper .step-btns {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border-soft);
+  }
+  .stepper .step-btns button {
+    width: 18px;
+    height: 13px;
+    display: grid;
+    place-items: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .stepper .step-btns button:hover { background: var(--row-hover); color: var(--fg); }
+  .stepper .step-btns button:active { background: var(--accent-soft); color: var(--accent-text); }
+  .stepper .step-btns button + button { border-top: 1px solid var(--border-soft); }
+  .stepper .step-btns svg { width: 8px; height: 8px; }
+  .unit { margin-left: 6px; width: 26px; flex: none; color: var(--fg); font-size: 12px; }
+
+  /* slider */
+  .pct {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg);
+    width: 30px;
+    text-align: right;
+  }
+  .slider-wrap {
+    position: relative;
+    flex: none;
+    width: 120px;
+    height: 20px;
+    cursor: pointer;
+    touch-action: none;
+    outline: none;
+  }
+  .slider-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .slider-track {
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--track);
+  }
+  .slider-fill {
+    position: absolute;
+    left: 0;
+    top: 8px;
+    height: 4px;
+    border-radius: 2px 0 0 2px;
+    background: var(--accent);
+  }
+  .slider-thumb {
+    position: absolute;
+    top: 3px;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  /* dropdown */
+  .dropdown { position: relative; flex: none; }
+  .dropdown .select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 104px;
+    min-height: 24px;
+    padding: 3px 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    background: var(--bg);
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--fg);
+  }
+  .dropdown .select:hover { background: var(--row-hover); }
+  .dropdown .select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dropdown .select svg { width: 8px; height: 8px; color: var(--muted); flex: none; }
+  .dropdown.open .select { border-color: var(--accent); background: var(--accent-soft); }
+  .dropdown .menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 104px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.18), 0 2px 8px oklch(0 0 0 / 0.08);
+    padding: 4px;
+    z-index: 10;
+    display: none;
+  }
+  .dropdown.open .menu { display: block; }
+  .dropdown.up .menu { top: auto; bottom: calc(100% + 4px); }
+  .dropdown .menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    font-size: 12.5px;
+    color: var(--fg);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .dropdown .menu button:hover { background: var(--accent); color: #fff; }
+  .dropdown .menu button.selected { background: var(--accent-soft); color: var(--accent-text); }
+  .dropdown .menu button.selected:hover { background: var(--accent); color: #fff; }
+
+  /* ---------- footer ---------- */
+  .footer { padding: 4px 0; }
+
+  .menu-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 34px;
+    padding: 0 14px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: var(--fg);
+    cursor: pointer;
+    text-align: left;
+  }
+  .menu-row:hover { background: var(--row-hover); }
+  .menu-row .chev { margin-left: auto; color: var(--muted); }
+  .menu-row .chev svg { width: 8px; height: 8px; }
+
+  .about-row {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 14px;
+    font-size: 12.5px;
+    color: var(--muted);
+    cursor: default;
+  }
+  .about-row .ver {
+    margin-left: 6px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translate(-50%, 8px);
+    background: oklch(0.25 0.01 250);
+    color: #fff;
+    font-size: 12.5px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px oklch(0 0 0 / 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 50;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<div class="panel" id="panel" data-od-id="settings-panel">
+  <header class="header">
+    <div class="countdown" data-od-id="countdown" id="countdown">
+      <svg class="eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span><span class="mono" id="cd-min">20</span>分<span class="mono" id="cd-sec">00</span>秒后眼睛休息一下</span>
+    </div>
+    <div class="row">
+      <span class="label">提醒休息眼睛</span>
+      <span class="spacer"></span>
+      <button class="switch" id="switch-reminder" role="switch" aria-checked="true" aria-label="提醒休息眼睛" data-od-id="switch-reminder"></button>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <section class="settings" id="settings" data-od-id="settings-section">
+    <button class="action-row" id="btn-remind-now" data-od-id="btn-remind-now">立即提醒</button>
+    <div class="row">
+      <span class="label">提醒间隔</span>
+      <span class="spacer"></span>
+      <div class="stepper" data-od-id="stepper-interval">
+        <input id="input-interval" type="text" inputmode="numeric" value="20" aria-label="提醒间隔（分钟）">
+        <span class="step-btns">
+          <button id="interval-up" data-od-id="interval-up" aria-label="增加">
+            <svg viewBox="0 0 8 8"><path d="M1 5.5 4 2.5 7 5.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button id="interval-down" data-od-id="interval-down" aria-label="减少">
+            <svg viewBox="0 0 8 8"><path d="M1 2.5 4 5.5 7 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </span>
+      </div>
+      <span class="unit">分钟</span>
+    </div>
+
+    <div class="row">
+      <span class="label">休息时长</span>
+      <span class="spacer"></span>
+      <div class="stepper" data-od-id="stepper-rest">
+        <input id="input-rest" type="text" inputmode="numeric" value="20" aria-label="休息时长（秒）">
+        <span class="step-btns">
+          <button id="rest-up" data-od-id="rest-up" aria-label="增加">
+            <svg viewBox="0 0 8 8"><path d="M1 5.5 4 2.5 7 5.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button id="rest-down" data-od-id="rest-down" aria-label="减少">
+            <svg viewBox="0 0 8 8"><path d="M1 2.5 4 5.5 7 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </span>
+      </div>
+      <span class="unit">秒</span>
+    </div>
+
+    <div class="row">
+      <span class="label">遮罩透明度</span>
+      <span class="spacer"></span>
+      <span class="pct" id="pct-overlay">40%</span>
+      <div class="slider-wrap" id="slider-overlay" data-od-id="slider-overlay" role="slider" tabindex="0" aria-label="遮罩透明度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40">
+        <div class="slider-track"></div>
+        <div class="slider-fill"></div>
+        <div class="slider-thumb"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="label">音效</span>
+      <span class="spacer"></span>
+      <div class="dropdown" data-od-id="dropdown-sound" id="dd-sound">
+        <button class="select" type="button">颂钵 <svg viewBox="0 0 8 8"><path d="M1 2.5 4 5.5 7 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></button>
+        <div class="menu"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="label">音量</span>
+      <span class="spacer"></span>
+      <span class="pct" id="pct-volume">30%</span>
+      <div class="slider-wrap" id="slider-volume" data-od-id="slider-volume" role="slider" tabindex="0" aria-label="音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30">
+        <div class="slider-track"></div>
+        <div class="slider-fill"></div>
+        <div class="slider-thumb"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="label">语言</span>
+      <span class="spacer"></span>
+      <div class="dropdown" data-od-id="dropdown-lang" id="dd-lang">
+        <button class="select" type="button">简体中文 <svg viewBox="0 0 8 8"><path d="M1 2.5 4 5.5 7 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></button>
+        <div class="menu"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="label">开机自启动</span>
+      <span class="spacer"></span>
+      <button class="switch" id="switch-autostart" role="switch" aria-checked="true" data-od-id="switch-autostart"></button>
+    </div>
+  </section>
+
+  <div class="divider" id="divider-mid"></div>
+
+  <footer class="footer" data-od-id="footer">
+    <button class="menu-row" id="link-knowledge" data-od-id="link-knowledge">
+      更多护眼知识
+      <span class="chev"><svg viewBox="0 0 8 8"><path d="M2.5 1 5.5 4 2.5 7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></span>
+    </button>
+    <div class="about-row" data-od-id="about-version">
+      关于 EyeCareAlarm <span class="ver">version 0.1.23</span>
+    </div>
+    <button class="menu-row" id="quit" data-od-id="quit">
+      退出 EyeCareAlarm
+    </button>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var panel = document.getElementById('panel');
+  var toast = document.getElementById('toast');
+
+  var DEFAULTS = {
+    reminder: true,
+    interval: 20,   // min, clamp 20–120
+    rest: 20,       // sec, clamp 5–60
+    overlay: 20,    // %
+    volume: 30,     // %
+    sound: '颂钵',
+    lang: '简体中文',
+    autostart: true
+  };
+
+  var KEY = 'eyeCareAlarm.settings.v1';
+  var state = {};
+  try { state = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+  catch (e) { state = Object.assign({}, DEFAULTS); }
+
+  var SOUNDS = ['颂钵', '提示音', '无'];
+  var LANGS = ['简体中文', 'English'];
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // ---------- countdown ----------
+  var remaining = state.interval * 60;
+  var cdMin = document.getElementById('cd-min');
+  var cdSec = document.getElementById('cd-sec');
+
+  function renderCountdown() {
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    cdMin.textContent = String(m);
+    cdSec.textContent = (s < 10 ? '0' : '') + s;
+  }
+
+  function resetCountdown() { remaining = state.interval * 60; renderCountdown(); }
+  setInterval(function () {
+    remaining--;
+    if (remaining <= 0) remaining = state.interval * 60;
+    renderCountdown();
+  }, 1000);
+
+  // ---------- switches ----------
+  function makeSwitch(id, key) {
+    var el = document.getElementById(id);
+    el.setAttribute('aria-checked', state[key] ? 'true' : 'false');
+    el.addEventListener('click', function () {
+      state[key] = !state[key];
+      el.setAttribute('aria-checked', state[key] ? 'true' : 'false');
+      save();
+      if (key === 'reminder') panel.classList.toggle('is-disabled', !state.reminder);
+    });
+  }
+  makeSwitch('switch-reminder', 'reminder');
+  makeSwitch('switch-autostart', 'autostart');
+
+  // ---------- steppers ----------
+  function makeStepper(inputId, upId, downId, key, min, max, unit) {
+    var input = document.getElementById(inputId);
+    var up = document.getElementById(upId);
+    var down = document.getElementById(downId);
+    if (!input || !up || !down) return;
+    input.value = state[key];
+
+    function clamp(v) { return Math.min(max, Math.max(min, Math.round(Number(v) || min))); }
+    function commit() {
+      var v = clamp(input.value);
+      input.value = v;
+      state[key] = v;
+      save();
+      if (key === 'interval') resetCountdown();
+    }
+    up.addEventListener('click', function () { input.value = clamp((Number(input.value) || min) + 1); commit(); });
+    down.addEventListener('click', function () { input.value = clamp((Number(input.value) || min) - 1); commit(); });
+    input.addEventListener('change', commit);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowUp') { e.preventDefault(); input.value = clamp((Number(input.value) || min) + 1); commit(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); input.value = clamp((Number(input.value) || min) - 1); commit(); }
+    });
+  }
+  makeStepper('input-interval', 'interval-up', 'interval-down', 'interval', 20, 120, '分钟');
+  makeStepper('input-rest', 'rest-up', 'rest-down', 'rest', 5, 60, '秒');
+
+  // ---------- sliders ----------
+  function makeSlider(wrapId, key, pctId) {
+    var wrap = document.getElementById(wrapId);
+    var pct = document.getElementById(pctId);
+    var fill = wrap.querySelector('.slider-fill');
+    var thumb = wrap.querySelector('.slider-thumb');
+    var THUMB = 14;
+
+    function clamp(v) { return Math.max(0, Math.min(100, Math.round(v))); }
+    function trackW() { return wrap.clientWidth || 120; }
+
+    function setVisual(v) {
+      v = clamp(v);
+      var w = trackW();
+      var usable = w - THUMB;
+      var thumbLeft = usable * v / 100;
+      fill.style.width = (v === 0 ? 0 : (thumbLeft + THUMB / 2)) + 'px';
+      thumb.style.left = thumbLeft + 'px';
+      pct.textContent = v + '%';
+      wrap.setAttribute('aria-valuenow', String(v));
+    }
+
+    function setFromX(clientX) {
+      var rect = wrap.getBoundingClientRect();
+      var usable = rect.width - THUMB;
+      if (usable <= 0) return;
+      var v = clamp(Math.round((clientX - rect.left - THUMB / 2) / usable * 100));
+      state[key] = v;
+      setVisual(v);
+      save();
+    }
+
+    function getX(e) { return (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX; }
+
+    var dragging = false;
+    wrap.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      dragging = true;
+      setFromX(e.clientX);
+    });
+    wrap.addEventListener('touchstart', function (e) {
+      dragging = true;
+      setFromX(getX(e));
+    }, { passive: false });
+    wrap.addEventListener('click', function (e) {
+      setFromX(e.clientX);
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (dragging) setFromX(e.clientX);
+    });
+    document.addEventListener('touchmove', function (e) {
+      if (dragging) { e.preventDefault(); setFromX(getX(e)); }
+    }, { passive: false });
+    document.addEventListener('mouseup', function () { dragging = false; });
+    document.addEventListener('touchend', function () { dragging = false; });
+
+    wrap.addEventListener('keydown', function (e) {
+      var step = e.shiftKey ? 10 : 1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); state[key] = clamp(state[key] + step); setVisual(state[key]); save(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); state[key] = clamp(state[key] - step); setVisual(state[key]); save(); }
+    });
+
+    state[key] = clamp(state[key]);
+    setVisual(state[key]);
+  }
+  makeSlider('slider-overlay', 'overlay', 'pct-overlay');
+  makeSlider('slider-volume', 'volume', 'pct-volume');
+
+  // ---------- dropdowns ----------
+  function makeDropdown(ddId, key, options) {
+    var dd = document.getElementById(ddId);
+    var selectBtn = dd.querySelector('.select');
+    var menu = dd.querySelector('.menu');
+
+    function renderMenu() {
+      menu.innerHTML = '';
+      options.forEach(function (opt) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = opt;
+        if (opt === state[key]) b.classList.add('selected');
+        b.setAttribute('role', 'option');
+        b.addEventListener('click', function (e) {
+          e.stopPropagation();
+          pick(opt);
+        });
+        b.addEventListener('keydown', function (e) {
+          var items = Array.prototype.slice.call(menu.querySelectorAll('button'));
+          var idx = items.indexOf(b);
+          if (e.key === 'ArrowDown') { e.preventDefault(); items[(idx + 1) % items.length].focus(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); items[(idx - 1 + items.length) % items.length].focus(); }
+          else if (e.key === 'Home') { e.preventDefault(); items[0].focus(); }
+          else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus(); }
+          else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(opt); }
+          else if (e.key === 'Escape') { e.preventDefault(); close(); selectBtn.focus(); }
+          else if (e.key === 'Tab') { close(); }
+        });
+        menu.appendChild(b);
+      });
+    }
+    function pick(opt) {
+      state[key] = opt;
+      selectBtn.firstChild.textContent = opt + ' ';
+      save();
+      renderMenu();
+      close();
+      selectBtn.focus();
+    }
+    function flip() {
+      var panelEl = document.getElementById('panel');
+      var pr = panelEl.getBoundingClientRect();
+      var mr = menu.getBoundingClientRect();
+      dd.classList.toggle('up', mr.bottom > pr.bottom - 2);
+    }
+    function close() { dd.classList.remove('open', 'up'); }
+    function open() {
+      document.querySelectorAll('.dropdown.open').forEach(function (d) { if (d !== dd) d.classList.remove('open'); });
+      dd.classList.add('open');
+      flip();
+      var target = menu.querySelector('.selected') || menu.querySelector('button');
+      if (target) target.focus();
+    }
+    selectBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (dd.classList.contains('open')) close();
+      else open();
+    });
+    selectBtn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') { close(); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!dd.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.dropdown.open').forEach(function (d) { d.classList.remove('open', 'up'); });
+      }
+    });
+    renderMenu();
+    selectBtn.firstChild.textContent = state[key] + ' ';
+  }
+  makeDropdown('dd-sound', 'sound', SOUNDS);
+  makeDropdown('dd-lang', 'lang', LANGS);
+
+  // ---------- footer ----------
+  var tTimer = null;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(tTimer);
+    tTimer = setTimeout(function () { toast.classList.remove('show'); }, 1600);
+  }
+
+  document.getElementById('link-knowledge').addEventListener('click', function () {
+    showToast('护眼知识页面尚未配置');
+  });
+
+  document.getElementById('quit').addEventListener('click', function () {
+    showToast('已退出 EyeCareAlarm');
+  });
+
+  document.getElementById('btn-remind-now').addEventListener('click', function () {
+    resetCountdown();
+    showToast('已触发休息提醒');
+  });
+
+  // ---------- init ----------
+  panel.classList.toggle('is-disabled', !state.reminder);
+  resetCountdown();
+</script>
+</body>
+</html>

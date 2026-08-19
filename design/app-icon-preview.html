@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EyeCareAlarm 应用图标 · 极简方向</title>
+<style>
+  :root{
+    --bg:      oklch(0.970 0.003 250);
+    --surface: oklch(1.000 0.000 0);
+    --fg:      oklch(0.25 0.015 250);
+    --muted:   oklch(0.52 0.015 250);
+    --border:  oklch(0.88 0.005 250);
+    --accent:  #00ab89;
+    --accent-ink: oklch(0.50 0.11 175);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg); color:var(--fg);
+    font:15px/1.75 -apple-system,"SF Pro Text","Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{ max-width:1040px; margin:0 auto; padding:56px 32px 80px; }
+
+  /* ---------- 页头 ---------- */
+  header.head{ margin-bottom:40px; }
+  .kicker{
+    font-size:11px; letter-spacing:0.14em; color:var(--accent-ink);
+    text-transform:uppercase; font-weight:600; margin-bottom:10px;
+  }
+  h1{
+    font-size:30px; line-height:1.4; font-weight:650; letter-spacing:0;
+    margin-bottom:10px;
+  }
+  .sub{ color:var(--muted); max-width:62ch; }
+
+  section{ margin-top:48px; }
+  h2{
+    font-size:17px; font-weight:650; margin-bottom:6px;
+  }
+  .sec-note{ color:var(--muted); font-size:13px; margin-bottom:20px; max-width:68ch; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:32px;
+  }
+
+  /* ---------- 主展示 ---------- */
+  .hero{ display:flex; gap:40px; align-items:center; flex-wrap:wrap; }
+  .hero .tile{ width:256px; height:256px; border-radius:14px; flex:none;
+    box-shadow:0 18px 48px oklch(0.72 0.14 190 / 0.28); }
+  .hero .tile img{ width:100%; height:100%; display:block; border-radius:57px; }
+  .hero-meta{ flex:1; min-width:280px; }
+  .hero-meta .name{ font-size:20px; font-weight:650; margin-bottom:8px; }
+  .hero-meta p{ color:var(--muted); max-width:52ch; }
+  .hero-meta p + p{ margin-top:8px; }
+  .tag{
+    display:inline-block; margin-top:14px; padding:3px 10px;
+    border:1px solid var(--accent); color:var(--accent-ink);
+    border-radius:999px; font-size:12px; font-weight:600; letter-spacing:0.02em;
+  }
+
+  /* ---------- 尺寸阶梯 ---------- */
+  .ramp-strip{ display:flex; align-items:flex-end; gap:36px; padding:28px 32px; flex-wrap:wrap; }
+  .ramp-strip + .ramp-strip{ border-top:1px solid var(--border); }
+  .ramp-dark{ background:oklch(0.24 0.015 250); border-radius:0 0 13px 13px; }
+  .ramp-item{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .ramp-item .lbl{ font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .ramp-dark .lbl{ color:oklch(0.70 0.01 250); }
+  .ramp-item img{ display:block; }
+  .ramp-card{ padding:0; overflow:hidden; }
+
+  /* ---------- 托盘语境 ---------- */
+  .trays{ display:grid; gap:16px; }
+  .menubar{
+    height:30px; border-radius:8px; display:flex; align-items:center;
+    padding:0 12px; gap:14px;
+    background:linear-gradient(oklch(0.99 0 0 / 0.92), oklch(0.94 0.004 250 / 0.92));
+    border:1px solid var(--border);
+    font-size:12px; color:oklch(0.30 0.01 250);
+  }
+  .menubar .sp{ flex:1; }
+  .menubar .mb-ic{ width:16px; height:16px; border-radius:4px; background:oklch(0.55 0.02 250 / 0.35); }
+  .menubar img{ width:16px; height:16px; display:block; }
+  .taskbar{
+    height:42px; border-radius:8px; display:flex; align-items:center;
+    padding:0 14px; gap:12px;
+    background:oklch(0.22 0.012 250);
+    font-size:12px; color:oklch(0.85 0.01 250);
+  }
+  .taskbar .sp{ flex:1; }
+  .taskbar .tb-ic{ width:16px; height:16px; border-radius:3px; background:oklch(0.75 0.01 250 / 0.30); }
+  .taskbar img{ width:16px; height:16px; display:block; }
+  .tray-cap{ font-size:12px; color:var(--muted); margin-top:6px; }
+
+  /* ---------- 候选方案 ---------- */
+  .cands{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .cand{ text-align:center; padding:28px 20px 22px; }
+  .cand .glyph{
+    width:88px; height:88px; margin:0 auto 16px; border-radius:20px;
+    display:grid; place-items:center;
+    background:oklch(0.72 0.14 190 / 0.10);
+    border:1px solid oklch(0.72 0.14 190 / 0.30);
+  }
+  .cand svg{ width:56px; height:56px; }
+  .cand h3{ font-size:14px; font-weight:650; margin-bottom:4px; }
+  .cand p{ font-size:12.5px; color:var(--muted); line-height:1.6; }
+  .cand .verdict{ display:inline-block; margin-top:10px; font-size:11px; font-weight:600;
+    padding:2px 9px; border-radius:999px; }
+  .cand.win{ border-color:var(--accent); }
+  .cand.win .verdict{ background:var(--accent); color:#fff; }
+  .cand.alt .verdict{ background:oklch(0.52 0.015 250 / 0.12); color:var(--muted); }
+
+  /* ---------- 文件清单 ---------- */
+  .files{ display:grid; gap:0; padding:0; overflow:hidden; }
+  .file-row{
+    display:flex; align-items:center; gap:14px; padding:14px 24px;
+    border-bottom:1px solid var(--border); font-size:13.5px;
+  }
+  .file-row:last-child{ border-bottom:0; }
+  .file-row code{
+    font:12.5px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    background:oklch(0.52 0.015 250 / 0.10); padding:3px 8px; border-radius:6px;
+  }
+  .file-row .use{ color:var(--muted); flex:1; }
+  .file-row a{
+    color:var(--accent-ink); text-decoration:none; font-weight:600; font-size:13px;
+    border:1px solid var(--accent); padding:5px 14px; border-radius:8px;
+  }
+  .file-row a:hover{ background:oklch(0.72 0.14 190 / 0.10); }
+  .file-row a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  footer.foot{ margin-top:56px; color:var(--muted); font-size:12.5px; line-height:1.7; }
+
+  @media (max-width:760px){
+    .cands{ grid-template-columns:1fr; }
+    .hero{ gap:28px; }
+    .page{ padding:40px 20px 64px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="head" data-od-id="icon-header">
+    <div class="kicker">EyeCareAlarm · App Icon</div>
+    <h1>应用图标 · 极简方向</h1>
+    <p class="sub">一只眼睛，瞳仁换成「暂停」双竖——产品的核心动作就是打断你、让眼睛停一下。品牌色直接取自设置面板的 accent 青绿，图标与界面天然一致。</p>
+  </header>
+
+  <!-- 主展示 -->
+  <section data-od-id="icon-hero">
+    <h2>推荐方案 A · 暂停之眼</h2>
+    <p class="sec-note">Dock / 开始菜单使用圆角底板版本；透明底版本用于向导页、关于窗口等界面内场景。</p>
+    <div class="card hero">
+      <div class="tile"><img src="app-icon-tile.svg" alt="EyeCareAlarm 圆角底板图标，青绿底白色眼睛与暂停符号"></div>
+      <div class="hero-meta">
+        <div class="name">眼睛 + 暂停 = 让眼睛停一下</div>
+        <p>杏仁形眼廓由两条对称弧线构成，瞳仁替换为一对圆头「暂停」竖条。含义直白：这款 App 的职责就是定时打断屏幕时间。</p>
+        <p>单品牌色、纯几何形、无渐变无投影，缩到 16px 仍有清晰剪影。</p>
+        <span class="tag">推荐</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 尺寸阶梯 -->
+  <section data-od-id="icon-sizes">
+    <h2>尺寸阶梯</h2>
+    <p class="sec-note">128 → 16px 逐级缩放检验。16px 起用专用变体：暂停双竖简化为实心瞳仁点，避免糊成一团。</p>
+    <div class="card ramp-card">
+      <div class="ramp-strip">
+        <div class="ramp-item"><img src="app-icon.svg" width="128" height="128" alt="128px 图标"><span class="lbl">128</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="64" height="64" alt="64px 图标"><span class="lbl">64</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="48" height="48" alt="48px 图标"><span class="lbl">48</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="32" height="32" alt="32px 图标"><span class="lbl">32</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="24" height="24" alt="24px 图标"><span class="lbl">24</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="20" height="20" alt="20px 图标"><span class="lbl">20</span></div>
+        <div class="ramp-item"><img src="app-icon-16.svg" width="16" height="16" alt="16px 托盘图标"><span class="lbl">16</span></div>
+      </div>
+      <div class="ramp-strip ramp-dark">
+        <div class="ramp-item"><img src="app-icon.svg" width="64" height="64" alt="深色底 64px 图标"><span class="lbl">64</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="48" height="48" alt="深色底 48px 图标"><span class="lbl">48</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="32" height="32" alt="深色底 32px 图标"><span class="lbl">32</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="24" height="24" alt="深色底 24px 图标"><span class="lbl">24</span></div>
+        <div class="ramp-item"><img src="app-icon.svg" width="20" height="20" alt="深色底 20px 图标"><span class="lbl">20</span></div>
+        <div class="ramp-item"><img src="app-icon-16.svg" width="16" height="16" alt="深色底 16px 托盘图标"><span class="lbl">16</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 托盘语境 -->
+  <section data-od-id="icon-tray">
+    <h2>托盘语境</h2>
+    <p class="sec-note">这是图标最真实的生存环境——macOS 菜单栏与 Windows 任务栏通知区，16px、与一排系统图标并排。</p>
+    <div class="trays">
+      <div>
+        <div class="menubar" data-od-id="tray-macos">
+          <span></span>
+          <span class="sp"></span>
+          <span class="mb-ic"></span>
+          <span class="mb-ic"></span>
+          <img src="app-icon-16.svg" alt="macOS 菜单栏中的 EyeCareAlarm 图标">
+          <span>周二 12:30</span>
+        </div>
+        <div class="tray-cap">macOS 菜单栏（亮色）</div>
+      </div>
+      <div>
+        <div class="taskbar" data-od-id="tray-windows">
+          <span class="tb-ic" style="width:22px;height:22px;border-radius:5px;"></span>
+          <span class="sp"></span>
+          <span class="tb-ic"></span>
+          <span class="tb-ic"></span>
+          <img src="app-icon-16.svg" alt="Windows 任务栏中的 EyeCareAlarm 图标">
+          <span>12:30<br>2026/8/19</span>
+        </div>
+        <div class="tray-cap">Windows 任务栏通知区（深色）</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 候选方案 -->
+  <section data-od-id="icon-variants">
+    <h2>候选方向对比</h2>
+    <p class="sec-note">三个方向都基于同一品牌色与笔画系统。推荐 A：在 16px 托盘尺寸下含义损失最小。</p>
+    <div class="cands">
+      <div class="card cand win" data-od-id="variant-a">
+        <div class="glyph">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M2.5 12C5 7.6 8.3 5.4 12 5.4s7 2.2 9.5 6.6c-2.5 4.4-5.8 6.6-9.5 6.6S5 16.4 2.5 12Z" stroke="#00AB89" stroke-width="1.8" stroke-linejoin="round"/>
+            <rect x="9.6" y="9.2" width="1.7" height="5.6" rx="0.85" fill="#00AB89"/>
+            <rect x="12.7" y="9.2" width="1.7" height="5.6" rx="0.85" fill="#00AB89"/>
+          </svg>
+        </div>
+        <h3>A · 暂停之眼</h3>
+        <p>眼睛 + 暂停双竖。含义直白，和产品「打断你休息」的动作一致；小尺寸剪影清晰。</p>
+        <span class="verdict">推荐</span>
+      </div>
+      <div class="card cand alt" data-od-id="variant-b">
+        <div class="glyph">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3.5 9.5Q12 18.5 20.5 9.5" stroke="#00AB89" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M7 12.8L6 15.4M12 14.4L12 17.2M17 12.8L18 15.4" stroke="#00AB89" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>B · 合目休息</h3>
+        <p>闭合的眼睑与睫毛。休息感强，但更像睡眠/冥想类 App，且睫毛在 16px 会糊掉。</p>
+        <span class="verdict">备选</span>
+      </div>
+      <div class="card cand alt" data-od-id="variant-c">
+        <div class="glyph">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4.5A7.5 7.5 0 1 1 6.2 7.4" stroke="#00AB89" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="2.6" fill="#00AB89"/>
+          </svg>
+        </div>
+        <h3>C · 计时环</h3>
+        <p>计时圆弧环绕瞳仁。贴合「提醒间隔」概念，但眼睛属性弱，远看像普通计时器。</p>
+        <span class="verdict">备选</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文件清单 -->
+  <section data-od-id="icon-files">
+    <h2>交付文件</h2>
+    <p class="sec-note">全部为矢量 SVG，可直接转 PNG / ICO / ICNS。如需我导出指定尺寸的位图，告诉我即可。</p>
+    <div class="card files">
+      <div class="file-row">
+        <code>app-icon.svg</code>
+        <span class="use">主标识 · 透明底 · 24 网格，用于 20px 以上场景</span>
+        <a href="app-icon.svg" download>下载</a>
+      </div>
+      <div class="file-row">
+        <code>app-icon-16.svg</code>
+        <span class="use">托盘变体 · 实心瞳仁，专用于 16px 菜单栏 / 任务栏</span>
+        <a href="app-icon-16.svg" download>下载</a>
+      </div>
+      <div class="file-row">
+        <code>app-icon-tile.svg</code>
+        <span class="use">圆角底板 · 1024 网格，用于 Dock / 开始菜单 / 商店图</span>
+        <a href="app-icon-tile.svg" download>下载</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    品牌色 #00AB89 与设置面板 accent 一致 · 单色彩绘，深浅底通用 · 全部图标为纯几何形，无渐变、无投影、无文字
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "eye-care-alarm",
+  "private": true,
+  "version": "0.1.23",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "tauri": "tauri",
+    "gen:assets": "node scripts/gen-icons.mjs",
+    "sync:sounds": "node scripts/sync-sounds.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.2.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.33.5",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  }
+}

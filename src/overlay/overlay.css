@@ -1,0 +1,121 @@
+:root {
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  --accent: oklch(0.66 0.13 172);
+  --veil-fg: oklch(0.96 0.002 250);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  background: transparent;
+  overflow: hidden;
+}
+
+/* ---------- 全屏休息遮罩 ---------- */
+.veil {
+  position: fixed;
+  inset: 0;
+  opacity: 1;
+}
+
+.veil-dim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.veil-text {
+  position: absolute;
+  inset: 0;
+}
+
+/* 两段文字同一容器绝对定位叠放，避免布局跳动 */
+.phase {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  max-width: min(640px, 88vw);
+  color: var(--veil-fg);
+  font-size: 30px;
+  font-weight: 550;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.85),
+    0 2px 16px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* ---------- 退出按钮（右下角） ---------- */
+.exit-btn {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(12, 14, 18, 0.82);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+  color: var(--veil-fg);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.exit-btn:hover {
+  background: rgba(34, 38, 46, 0.88);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.exit-btn:active {
+  transform: translateY(1px);
+}
+
+.exit-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.exit-btn .cd {
+  display: inline-block;
+  min-width: 2ch;
+  text-align: center;
+  color: var(--accent);
+}
+
+@media (max-width: 520px) {
+  .phase {
+    font-size: 22px;
+  }
+  .exit-btn {
+    right: 16px;
+    bottom: 16px;
+  }
+}
