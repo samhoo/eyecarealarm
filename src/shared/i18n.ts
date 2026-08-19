@@ -68,7 +68,7 @@ const dict: Record<Lang, Messages> = {
     sound: "Sound",
     volume: "Volume",
     language: "Language",
-    autostart: "Launch at login",
+    autostart: "Launch at startup",
     moreKnowledge: "More eye-care tips",
     about: "About EyeCareAlarm",
     version: "version 0.1.23",
