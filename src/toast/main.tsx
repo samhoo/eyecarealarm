@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { getSettings } from "../shared/ipc";
 import { detectLang, t, type Lang } from "../shared/i18n";
+import "../shared/no-context-menu";
 import "./toast.css";
 
 /** 启动提示小条：窗口由 Rust 3 秒后销毁，前端不做定时 */
