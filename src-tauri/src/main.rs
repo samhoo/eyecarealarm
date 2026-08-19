@@ -1,3 +1,7 @@
+// Release: GUI subsystem, no console window (a stray console would kill the
+// app when closed). Debug keeps the console for [audio]/eprintln logs.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod audio;
 mod fullscreen;
 mod overlay;
