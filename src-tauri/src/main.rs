@@ -228,7 +228,7 @@ fn main() {
     // The lock file handle must outlive main; leaking is intentional.
     std::mem::forget(lock);
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -273,6 +273,17 @@ fn main() {
             timer::spawn(handle);
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running EyeCareAlarm");
+        .build(tauri::generate_context!())
+        .expect("error while building EyeCareAlarm");
+    app.run(|handle, event| {
+        // macOS 重复启动一个运行中的 app 不会产生第二个进程（LaunchServices
+        // 只向已运行实例发 reopen 事件），单实例锁的第二进程路径走不到。
+        // 在已运行实例收到 reopen 时补弹「护眼提醒已启动」，与 Windows 对齐。
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Reopen { .. } = event {
+            tray::show_toast(handle);
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = (handle, event);
+    });
 }
