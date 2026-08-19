@@ -11,10 +11,11 @@ use std::thread;
 use std::time::Duration;
 
 use parking_lot::Mutex;
-use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
+use rodio::mixer::Mixer;
+use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 
 pub struct Audio {
-    _stream: OutputStream, // keeps the device open
+    mixer: Mixer, // Send+Sync clone of the stream's mixer; the stream itself is leaked
     sink: Mutex<Option<Sink>>,
     /// Generation counter: bumped on every start/stop so a stale fade thread
     /// from a previous playback never touches the current sink.
@@ -48,8 +49,13 @@ fn norm_gain(rms: f32) -> f32 {
 impl Audio {
     pub fn new() -> Option<Self> {
         let stream = OutputStreamBuilder::open_default_stream().ok()?;
+        let mixer = stream.mixer().clone();
+        // OutputStream is !Send on macOS (cpal CoreAudio property-listener
+        // callback), so it cannot live in AppState. Leak it to keep the device
+        // open for the app lifetime and keep only the Send+Sync Mixer here.
+        std::mem::forget(stream);
         Some(Self {
-            _stream: stream,
+            mixer,
             sink: Mutex::new(None),
             generation: AtomicU64::new(0),
             rms_cache: Default::default(),
@@ -82,7 +88,7 @@ impl Audio {
             eprintln!("[audio] cannot decode {:?}", path);
             return;
         };
-        let sink = Sink::connect_new(self._stream.mixer());
+        let sink = Sink::connect_new(&self.mixer);
         sink.set_volume(base_vol);
         sink.append(source.repeat_infinite());
         sink.play();

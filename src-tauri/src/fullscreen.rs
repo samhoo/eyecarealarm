@@ -52,11 +52,9 @@ pub fn is_other_app_fullscreen() -> bool {
 
 #[cfg(target_os = "macos")]
 pub fn is_other_app_fullscreen() -> bool {
-    use core_graphics::display::{CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID};
+    use core_graphics::display::{CGMainDisplayID, CGWindowListCopyWindowInfo, kCGNullWindowID, kCGWindowListOptionOnScreenOnly};
     use core_foundation::array::CFArrayRef;
     use core_foundation::dictionary::CFDictionaryRef;
-    use core_foundation::number::CFNumberRef;
-    use core_foundation::string::CFStringRef;
     use std::ffi::c_void;
 
     unsafe {
@@ -66,7 +64,7 @@ pub fn is_other_app_fullscreen() -> bool {
         }
         let array = list as CFArrayRef;
         let count = core_foundation::array::CFArrayGetCount(array);
-        let screen = core_graphics::display::CGMainDisplayID().bounds();
+        let screen = core_graphics::display::CGDisplay::new(CGMainDisplayID()).bounds();
         let own_pid = std::process::id() as i32;
         for i in 0..count {
             let dict = core_foundation::array::CFArrayGetValueAtIndex(array, i) as CFDictionaryRef;
@@ -117,7 +115,7 @@ unsafe fn dict_get_size(dict: core_foundation::dictionary::CFDictionaryRef, key:
         return None;
     }
     let d = unsafe { CFDictionary::wrap_under_get_rule(v as CFDictionaryRef) };
-    let rect: core_graphics::geometry::CGRect = core_graphics::geometry::CGRect::from_dictionary_representation(&d)?;
+    let rect: core_graphics::geometry::CGRect = core_graphics::geometry::CGRect::from_dict_representation(&d)?;
     Some((rect.size.width, rect.size.height))
 }
 

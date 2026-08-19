@@ -5,12 +5,12 @@
   "identifier": "com.eyecarealarm.app",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run sync:sounds && npm run dev",
     "beforeBuildCommand": "npm run sync:sounds && npm run build"
   },
   "app": {
     "windows": [],
+    "macOSPrivateApi": true,
     "security": {
       "csp": null
     }

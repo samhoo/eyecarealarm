@@ -210,7 +210,7 @@ fn main() {
             let handle = app.handle().clone();
 
             #[cfg(target_os = "macos")]
-            handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            let _ = handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             if !first_instance {
                 // Second instance: show "护眼提醒已启动" for 3s, then exit.
