@@ -13,10 +13,86 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
-const RELEASES_API: &str =
-    "https://api.github.com/repos/samhoo/eyecarealarm/releases/latest";
+const RELEASES_API: &str = "https://eca-proxy.samhoo.workers.dev/";
 pub const RELEASES_PAGE: &str = "https://github.com/samhoo/eyecarealarm/releases/latest";
 const THROTTLE: chrono::Duration = chrono::Duration::hours(24);
+
+/// System HTTP proxy for the update endpoint (workers.dev is not directly
+/// reachable from some networks). Order: env vars (ureq convention), then
+/// OS settings (Windows registry / macOS scutil). None → direct connection.
+fn system_proxy() -> Option<ureq::Proxy> {
+    if let Some(p) = ureq::Proxy::try_from_env() {
+        return Some(p);
+    }
+    platform_proxy()
+}
+
+#[cfg(windows)]
+fn platform_proxy() -> Option<ureq::Proxy> {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+    let key = RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey(r"Software\Microsoft\Windows\CurrentVersion\Internet Settings")
+        .ok()?;
+    let enabled: u32 = key.get_value("ProxyEnable").ok()?;
+    if enabled == 0 {
+        return None;
+    }
+    let server: String = key.get_value("ProxyServer").ok()?;
+    let server = server.trim();
+    if server.is_empty() {
+        return None;
+    }
+    // Two shapes: "host:port" (all protocols) or per-protocol
+    // "http=h:p;https=h:p;socks=h:p".
+    let (scheme, addr) = if server.contains('=') {
+        let mut chosen: (&str, &str) = ("http", "");
+        for part in server.split(';') {
+            if let Some((k, v)) = part.split_once('=') {
+                match k.trim().to_ascii_lowercase().as_str() {
+                    "https" | "http" => {
+                        chosen = ("http", v.trim());
+                        break;
+                    }
+                    "socks" if chosen.1.is_empty() => chosen = ("socks5", v.trim()),
+                    _ => {}
+                }
+            }
+        }
+        if chosen.1.is_empty() {
+            return None;
+        }
+        chosen
+    } else {
+        ("http", server)
+    };
+    ureq::Proxy::new(&format!("{scheme}://{addr}")).ok()
+}
+
+#[cfg(target_os = "macos")]
+fn platform_proxy() -> Option<ureq::Proxy> {
+    let out = std::process::Command::new("scutil").arg("--proxies").output().ok()?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let get = |key: &str| -> Option<String> {
+        text.lines()
+            .map(str::trim)
+            .find(|l| l.starts_with(key))
+            .and_then(|l| l.split(':').nth(1))
+            .map(|v| v.trim().to_string())
+    };
+    let enabled = get("HTTPSEnable").or_else(|| get("HTTPEnable"))? == "1";
+    if !enabled {
+        return None;
+    }
+    let host = get("HTTPSProxy").or_else(|| get("HTTPProxy"))?;
+    let port = get("HTTPSPort").or_else(|| get("HTTPPort")).unwrap_or_else(|| "8080".into());
+    ureq::Proxy::new(&format!("http://{host}:{port}")).ok()
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
+fn platform_proxy() -> Option<ureq::Proxy> {
+    None
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct UpdateInfo {
@@ -67,14 +143,16 @@ fn newer_than_current(tag: &str) -> Option<String> {
 
 /// One check round-trip. Updates state + persistence on success.
 ///
-/// 404 semantics: the repo has no Release yet, which means nothing newer
-/// exists — report Current, not Failed. Only network/parse errors are Failed.
+/// The endpoint is our own proxy service: 404 (or any HTTP error) means the
+/// service is misbehaving → report Failed so the user sees "检查失败".
 pub fn run_check(app: &AppHandle) -> CheckResult {
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .timeout_global(Some(Duration::from_secs(5)))
-        .user_agent("EyeCareAlarm")
-        .build()
-        .into();
+    let mut builder = ureq::Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(6)))
+        .user_agent("EyeCareAlarm");
+    if let Some(proxy) = system_proxy() {
+        builder = builder.proxy(Some(proxy));
+    }
+    let agent: ureq::Agent = builder.build().into();
     let resp = agent
         .get(RELEASES_API)
         .header("Accept", "application/vnd.github+json")
@@ -86,24 +164,23 @@ pub fn run_check(app: &AppHandle) -> CheckResult {
             .read_json::<serde_json::Value>()
             .ok()
             .and_then(|v| v.get("tag_name")?.as_str().map(str::to_string)),
-        Err(ureq::Error::StatusCode(404)) => None, // no releases published yet
         Err(_) => return CheckResult::Failed,
+    };
+    let Some(tag) = tag else {
+        return CheckResult::Failed; // 200 but unexpected payload
     };
 
     let info = UpdateInfo {
-        latest: tag
-            .as_deref()
-            .map(|t| t.trim_start_matches('v').to_string())
-            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string()),
+        latest: tag.trim_start_matches('v').to_string(),
         checked_at: chrono::Utc::now().to_rfc3339(),
-        update_available: tag.as_deref().and_then(newer_than_current).is_some(),
+        update_available: newer_than_current(&tag).is_some(),
     };
     save(app, &info);
     {
         let state = app.state::<crate::AppState>();
         *state.update.lock() = Some(info.clone());
     }
-    if let Some(latest) = tag.as_deref().and_then(newer_than_current) {
+    if let Some(latest) = newer_than_current(&tag) {
         let _ = app.emit("update-available", &info);
         CheckResult::Available { latest }
     } else {
