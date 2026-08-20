@@ -51,6 +51,19 @@ export interface OverlayPayload {
   lang: Lang;
 }
 
+/** Persisted update-check state (update.json), drives the red dot. */
+export interface UpdateInfo {
+  latest: string;
+  checked_at: string;
+  update_available: boolean;
+}
+
+/** Result of a manual "检查更新…" check. */
+export type CheckResult =
+  | { status: "available"; latest: string }
+  | { status: "current" }
+  | { status: "failed" };
+
 /** Overlay timeline constants (seconds since overlay appear). */
 export const TIMELINE = {
   warmupEnd: 5, // 0-5s: click-through, opacity ramps 0 -> set value

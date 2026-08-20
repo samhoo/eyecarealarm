@@ -350,3 +350,22 @@ body {
   color: var(--muted);
   opacity: 0.8;
 }
+
+/* 检查更新行内联状态 */
+#check-update.checking { color: var(--muted); cursor: default; }
+#check-update.available { color: var(--accent-text); font-weight: 600; }
+#check-update.current { color: var(--accent-text); }
+#check-update.failed { color: var(--danger); }
+
+/* 新版本红点：出现在版本号后，整行可点击前往下载页 */
+.about-row.has-update { cursor: pointer; }
+.update-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-left: 6px;
+  vertical-align: middle;
+  flex: none;
+}

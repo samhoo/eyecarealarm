@@ -2,19 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
+  checkUpdate,
   getSettings,
   getTimerState,
+  getUpdateState,
+  getVersion,
   importSound,
   listSounds,
   onSettingsChanged,
   onTimerTick,
+  onUpdateAvailable,
   previewSound,
   quitApp,
   remindNow,
   updateSettings,
 } from "../shared/ipc";
 import { LANGS, t } from "../shared/i18n";
-import type { Settings, SoundInfo, TimerState } from "../shared/types";
+import type { Settings, SoundInfo, TimerState, UpdateInfo } from "../shared/types";
 import { Switch } from "./components/Switch";
 import { Stepper } from "./components/Stepper";
 import { Slider } from "./components/Slider";
@@ -22,6 +26,7 @@ import { Dropdown, type DropdownOption } from "./components/Dropdown";
 
 const IMPORT_ID = "__import__";
 const KNOWLEDGE_URL = "https://www.healthline.com/health/eye-health/20-20-20-rule";
+const RELEASES_PAGE = "https://github.com/samhoo/eyecarealarm/releases/latest";
 
 /** Renders the header line with every digit run in the mono style. */
 function renderHeader(text: string) {
@@ -42,7 +47,12 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sounds, setSounds] = useState<SoundInfo[]>([]);
   const [timer, setTimer] = useState<TimerState | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  /** 检查更新行的内联状态：idle → checking → available / current / failed(3s 回弹) */
+  const [checkState, setCheckState] = useState<"idle" | "checking" | "available" | "current" | "failed">("idle");
   const panelRef = useRef<HTMLDivElement>(null);
+  const checkRevertRef = useRef<number | undefined>(undefined);
 
   // Initial load + event subscriptions.
   useEffect(() => {
@@ -62,12 +72,25 @@ export default function App() {
         if (!disposed) setTimer(s);
       })
       .catch(console.error);
+    getVersion()
+      .then((v) => {
+        if (!disposed) setAppVersion(v);
+      })
+      .catch(console.error);
+    getUpdateState()
+      .then((u) => {
+        if (!disposed) setUpdateInfo(u);
+      })
+      .catch(console.error);
     const unTick = onTimerTick((s) => setTimer(s));
     const unSettings = onSettingsChanged((s) => setSettings(s));
+    const unUpdate = onUpdateAvailable((u) => setUpdateInfo(u));
     return () => {
       disposed = true;
       unTick.then((f) => f()).catch(() => {});
       unSettings.then((f) => f()).catch(() => {});
+      unUpdate.then((f) => f()).catch(() => {});
+      window.clearTimeout(checkRevertRef.current);
     };
   }, []);
 
@@ -269,8 +292,54 @@ export default function App() {
               </svg>
             </span>
           </button>
-          <div className="about-row">
-            {msg.about} <span className="ver">{msg.version}</span>
+          <button
+            type="button"
+            className={`menu-row${checkState !== "idle" ? " " + checkState : ""}`}
+            id="check-update"
+            onClick={() => {
+              if (checkState === "available") {
+                openUrl(RELEASES_PAGE).catch(console.error);
+                return;
+              }
+              if (checkState === "checking") return;
+              setCheckState("checking");
+              checkUpdate()
+                .then((r) => {
+                  if (r.status === "available") {
+                    setCheckState("available");
+                    getUpdateState().then(setUpdateInfo).catch(() => {});
+                  } else {
+                    setCheckState(r.status === "current" ? "current" : "failed");
+                    window.clearTimeout(checkRevertRef.current);
+                    checkRevertRef.current = window.setTimeout(() => setCheckState("idle"), 3000);
+                  }
+                })
+                .catch(() => {
+                  setCheckState("failed");
+                  window.clearTimeout(checkRevertRef.current);
+                  checkRevertRef.current = window.setTimeout(() => setCheckState("idle"), 3000);
+                });
+            }}
+          >
+            {checkState === "checking"
+              ? msg.checking
+              : checkState === "available"
+                ? msg.updateAvailable(updateInfo?.latest ?? "")
+                : checkState === "current"
+                  ? msg.upToDate
+                  : checkState === "failed"
+                    ? msg.checkFailed
+                    : msg.checkUpdate}
+          </button>
+          <div
+            className={`about-row${updateInfo?.update_available ? " has-update" : ""}`}
+            title={updateInfo?.update_available ? msg.updateAvailable(updateInfo.latest) : undefined}
+            onClick={() => {
+              if (updateInfo?.update_available) openUrl(RELEASES_PAGE).catch(console.error);
+            }}
+          >
+            {msg.about} <span className="ver">version {appVersion}</span>
+            {updateInfo?.update_available && <span className="update-dot" />}
           </div>
           <button type="button" className="menu-row" onClick={() => quitApp().catch(console.error)}>
             {msg.quit}

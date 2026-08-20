@@ -10,7 +10,10 @@
     "core:window:allow-set-focus",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://www.healthline.com/**" }]
+      "allow": [
+        { "url": "https://www.healthline.com/**" },
+        { "url": "https://github.com/**" }
+      ]
     }
   ]
 }

@@ -9,6 +9,7 @@ mod settings;
 mod sound;
 mod timer;
 mod tray;
+mod update;
 
 use std::fs::File;
 use std::sync::atomic::{AtomicBool, AtomicI64};
@@ -35,6 +36,8 @@ pub struct AppState {
     pub dialog_open: AtomicBool,
     /// None on machines without an audio device; playback is then a no-op.
     pub audio: Option<std::sync::Arc<audio::Audio>>,
+    /// Last update-check result (persisted in update.json); drives the red dot.
+    pub update: Mutex<Option<update::UpdateInfo>>,
 }
 
 impl AppState {
@@ -52,6 +55,7 @@ impl AppState {
             overlay: Default::default(),
             dialog_open: AtomicBool::new(false),
             audio,
+            update: Mutex::new(update::load(app)),
         }
     }
 }
@@ -200,6 +204,22 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
+#[tauri::command]
+fn get_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[tauri::command]
+fn get_update_state(state: tauri::State<'_, AppState>) -> Option<update::UpdateInfo> {
+    state.update.lock().clone()
+}
+
+/// Manual check from the panel row; always hits the network (no throttle).
+#[tauri::command]
+fn check_update(app: AppHandle) -> update::CheckResult {
+    update::run_check(&app)
+}
+
 // ---------- helpers ----------
 
 fn apply_autostart(app: &AppHandle, on: bool) {
@@ -245,6 +265,9 @@ fn main() {
             preview_sound,
             overlay_exit,
             quit_app,
+            get_version,
+            get_update_state,
+            check_update,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

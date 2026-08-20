@@ -171,6 +171,7 @@ pub fn start(app: &AppHandle) {
 
     let app2 = app.clone();
     thread::spawn(move || {
+        crate::update::maybe_check_background(&app2);
         thread::sleep(Duration::from_secs(BLOCK_START_SEC));
         {
             let app_block = app2.clone();

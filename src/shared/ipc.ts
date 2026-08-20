@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { OverlayPayload, Settings, SoundInfo, TimerState } from "./types";
+import type { CheckResult, OverlayPayload, Settings, SoundInfo, TimerState, UpdateInfo } from "./types";
 
 // ---- commands (frontend -> rust) ----
 export const getSettings = () => invoke<Settings>("get_settings");
@@ -16,6 +16,10 @@ export const previewSound = (id: string) => invoke<void>("preview_sound", { id }
 export const quitApp = () => invoke<void>("quit_app");
 /** Overlay window reports user-initiated exit (Esc / button). */
 export const overlayExit = () => invoke<void>("overlay_exit");
+export const getVersion = () => invoke<string>("get_version");
+export const getUpdateState = () => invoke<UpdateInfo | null>("get_update_state");
+/** Manual check; always hits the network. */
+export const checkUpdate = () => invoke<CheckResult>("check_update");
 
 // ---- events (rust -> frontend) ----
 export const onTimerTick = (cb: (s: TimerState) => void): Promise<UnlistenFn> =>
@@ -27,3 +31,6 @@ export const onOverlayStart = (cb: (p: OverlayPayload) => void): Promise<Unliste
 /** fade_ms: how long the closing fade should take before Rust destroys the windows. */
 export const onOverlayClose = (cb: (fadeMs: number) => void): Promise<UnlistenFn> =>
   listen<{ fade_ms: number }>("overlay-close", (e) => cb(e.payload.fade_ms));
+/** Background check found a newer release. */
+export const onUpdateAvailable = (cb: (i: UpdateInfo) => void): Promise<UnlistenFn> =>
+  listen<UpdateInfo>("update-available", (e) => cb(e.payload));

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "tauri": "tauri",
     "gen:assets": "node scripts/gen-icons.mjs",
-    "sync:sounds": "node scripts/sync-sounds.mjs"
+    "sync:sounds": "node scripts/sync-sounds.mjs",
+    "sync:version": "node scripts/sync-version.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.2.0",
