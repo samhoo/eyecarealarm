@@ -66,36 +66,44 @@ fn newer_than_current(tag: &str) -> Option<String> {
 }
 
 /// One check round-trip. Updates state + persistence on success.
+///
+/// 404 semantics: the repo has no Release yet, which means nothing newer
+/// exists — report Current, not Failed. Only network/parse errors are Failed.
 pub fn run_check(app: &AppHandle) -> CheckResult {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(Duration::from_secs(5)))
         .user_agent("EyeCareAlarm")
         .build()
         .into();
-    let result = agent
+    let resp = agent
         .get(RELEASES_API)
         .header("Accept", "application/vnd.github+json")
-        .call()
-        .and_then(|mut resp| resp.body_mut().read_json::<serde_json::Value>());
+        .call();
 
-    let tag = result
-        .ok()
-        .and_then(|v| v.get("tag_name")?.as_str().map(str::to_string));
-    let Some(tag) = tag else {
-        return CheckResult::Failed;
+    let tag = match resp {
+        Ok(mut r) => r
+            .body_mut()
+            .read_json::<serde_json::Value>()
+            .ok()
+            .and_then(|v| v.get("tag_name")?.as_str().map(str::to_string)),
+        Err(ureq::Error::StatusCode(404)) => None, // no releases published yet
+        Err(_) => return CheckResult::Failed,
     };
 
     let info = UpdateInfo {
-        latest: tag.trim_start_matches('v').to_string(),
+        latest: tag
+            .as_deref()
+            .map(|t| t.trim_start_matches('v').to_string())
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string()),
         checked_at: chrono::Utc::now().to_rfc3339(),
-        update_available: newer_than_current(&tag).is_some(),
+        update_available: tag.as_deref().and_then(newer_than_current).is_some(),
     };
     save(app, &info);
     {
         let state = app.state::<crate::AppState>();
         *state.update.lock() = Some(info.clone());
     }
-    if let Some(latest) = newer_than_current(&tag) {
+    if let Some(latest) = tag.as_deref().and_then(newer_than_current) {
         let _ = app.emit("update-available", &info);
         CheckResult::Available { latest }
     } else {
