@@ -6,10 +6,8 @@
 //! wedges later creation — so no window is ever created at reminder time or
 //! destroyed at all.
 //!
-//! Timeline (seconds, mirrors src/shared/types.ts TIMELINE):
-//!   0    windows shown on every monitor, click-through, emit overlay-start
-//!   8    input blocking on (cursor events + focus), audio starts
-//!   27   natural end: fade 1s, hide, count one rest, reset timer
+//!   8    input blocking on, audio starts, and the configured rest countdown begins
+//!   8 + rest_sec  natural end: fade 1s, hide, count one rest, reset timer
 //! Early exit (Esc / button → overlay_exit command) runs the same close path
 //! without counting. Close is idempotent via `closing`.
 //!
@@ -28,7 +26,6 @@ use crate::settings;
 use crate::timer;
 
 pub const BLOCK_START_SEC: u64 = 8;
-pub const NATURAL_END_SEC: u64 = 27;
 pub const FADE_MS: u64 = 1000;
 
 #[derive(Default)]
@@ -170,6 +167,7 @@ pub fn start(app: &AppHandle) {
     });
 
     let app2 = app.clone();
+    let rest_duration = Duration::from_secs(rest_sec as u64);
     thread::spawn(move || {
         crate::update::maybe_check_background(&app2);
         thread::sleep(Duration::from_secs(BLOCK_START_SEC));
@@ -182,7 +180,6 @@ pub fn start(app: &AppHandle) {
                         let _ = w.set_ignore_cursor_events(false);
                     }
                 }
-                // Focus the first screen so Esc reaches the webview.
                 if let Some(w) = state
                     .overlay
                     .labels()
@@ -191,16 +188,16 @@ pub fn start(app: &AppHandle) {
                 {
                     let _ = w.set_focus();
                 }
+                let _ = app_block.emit("overlay-input-ready", ());
             });
             let state = app2.state::<crate::AppState>();
             if let Some(audio) = &state.audio {
                 if let Some(path) = settings::resolve_sound(&app2, &sound_id) {
-                    let play = (rest_sec as u64).min(NATURAL_END_SEC - BLOCK_START_SEC);
-                    audio.play(path, volume, play, 2);
+                    audio.play(path, volume, rest_sec as u64, 2);
                 }
             }
         }
-        thread::sleep(Duration::from_secs(NATURAL_END_SEC - BLOCK_START_SEC));
+        thread::sleep(rest_duration);
         close(&app2, true);
     });
 }

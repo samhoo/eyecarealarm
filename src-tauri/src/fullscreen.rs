@@ -17,9 +17,11 @@ pub fn is_other_app_fullscreen() -> bool {
     use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect, GetWindowThreadProcessId};
 
     unsafe {
-        // QUNS_BUSY=2, QUNS_RUNNING_D3D_FULL_SCREEN=3, QUNS_PRESENTATION_MODE=5
+        // QUNS_BUSY=2, QUNS_RUNNING_D3D_FULL_SCREEN=3,
+        // QUNS_PRESENTATION_MODE=4. QUNS_ACCEPTS_NOTIFICATIONS=5 is the
+        // normal desktop state and must not suppress reminders.
         if let Ok(state) = SHQueryUserNotificationState() {
-            if matches!(state.0, 2 | 3 | 5) {
+            if matches!(state.0, 2 | 3 | 4) {
                 return true;
             }
         }

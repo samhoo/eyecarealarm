@@ -201,7 +201,7 @@ export default function App() {
             <span className="spacer" />
             <Stepper
               value={settings.interval_min}
-              min={20}
+              min={1}
               max={120}
               ariaLabel={msg.interval}
               onCommit={(v) => patch({ interval_min: v })}

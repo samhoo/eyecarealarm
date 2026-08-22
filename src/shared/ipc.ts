@@ -28,9 +28,11 @@ export const onSettingsChanged = (cb: (s: Settings) => void): Promise<UnlistenFn
   listen<Settings>("settings-changed", (e) => cb(e.payload));
 export const onOverlayStart = (cb: (p: OverlayPayload) => void): Promise<UnlistenFn> =>
   listen<OverlayPayload>("overlay-start", (e) => cb(e.payload));
+/** Emitted after click-through is disabled and the overlay accepts input. */
+export const onOverlayInputReady = (cb: () => void): Promise<UnlistenFn> =>
+  listen("overlay-input-ready", () => cb());
 /** fade_ms: how long the closing fade should take before Rust destroys the windows. */
 export const onOverlayClose = (cb: (fadeMs: number) => void): Promise<UnlistenFn> =>
   listen<{ fade_ms: number }>("overlay-close", (e) => cb(e.payload.fade_ms));
-/** Background check found a newer release. */
 export const onUpdateAvailable = (cb: (i: UpdateInfo) => void): Promise<UnlistenFn> =>
   listen<UpdateInfo>("update-available", (e) => cb(e.payload));

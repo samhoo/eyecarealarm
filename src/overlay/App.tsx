@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { onOverlayClose, onOverlayStart, overlayExit } from "../shared/ipc";
+import { onOverlayClose, onOverlayInputReady, onOverlayStart, overlayExit } from "../shared/ipc";
 import { t } from "../shared/i18n";
 import { TIMELINE, type OverlayPayload } from "../shared/types";
 
 /**
  * 文字1（warmupText）：0-2s 渐显，2-4s 全显，4-5s 渐隐（1s）。
- * 文字2（restText）：text2Start(4)-6s 渐显（2s），其中 4-5s 与文字1 渐隐交叉淡化。
+ * 文字2（restText）：text2Start(5)-6s 渐显（1s），其中 5s 与文字1 渐隐交叉淡化；第 8s 屏蔽输入。
  */
 const TEXT1_IN_END = 2;
 const TEXT1_HOLD_END = TIMELINE.warmupEnd - 1;
-const TEXT2_FADE = 2;
+const TEXT2_FADE = 1;
 
 export default function App() {
   const [payload, setPayload] = useState<OverlayPayload | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [canExit, setCanExit] = useState(false);
   const [fadeMs, setFadeMs] = useState<number | null>(null);
   const exitedRef = useRef(false);
   const closedRef = useRef(false);
+  const canExitRef = useRef(false);
   const dimRef = useRef<HTMLDivElement>(null);
   const text1Ref = useRef<HTMLParagraphElement>(null);
   const text2Ref = useRef<HTMLParagraphElement>(null);
@@ -27,14 +29,16 @@ export default function App() {
   const start = useCallback((p: OverlayPayload) => {
     exitedRef.current = false;
     closedRef.current = false;
+    canExitRef.current = false;
+    setCanExit(false);
     setFadeMs(null);
     setCountdown(null);
     setPayload(p); // 新对象 → rAF effect cleanup 后重跑，时间线归零
   }, []);
 
-  /** Esc / 退出按钮，任意时刻生效，幂等；关闭动画统一由 overlay-close 驱动 */
+  /** Escape / 退出按钮仅在正式阶段开始后可响应。 */
   const exit = useCallback(() => {
-    if (exitedRef.current) return;
+    if (!canExitRef.current || exitedRef.current) return;
     exitedRef.current = true;
     void overlayExit();
   }, []);
@@ -43,6 +47,13 @@ export default function App() {
     let disposed = false;
     const unlistens: Array<() => void> = [];
     onOverlayStart(start).then((u) => {
+      if (disposed) u();
+      else unlistens.push(u);
+    });
+    onOverlayInputReady(() => {
+      canExitRef.current = true;
+      setCanExit(true);
+    }).then((u) => {
       if (disposed) u();
       else unlistens.push(u);
     });
@@ -73,7 +84,8 @@ export default function App() {
     if (!payload) return;
     /* 设置值为透明度 %：100 = 全透明 → 黑幕不透明度 = (100 - overlay_opacity) / 100 */
     const dimTarget = (100 - payload.overlay_opacity) / 100;
-    const stopAt = TIMELINE.naturalEnd + TIMELINE.fadeOutMs / 1000 + 0.5;
+    const naturalEnd = TIMELINE.blockStart + payload.rest_sec;
+    const stopAt = naturalEnd + TIMELINE.fadeOutMs / 1000 + 0.5;
     const t0 = performance.now();
 
     const tick = (now: number) => {
@@ -106,7 +118,7 @@ export default function App() {
         p2.style.opacity = String(Math.min(1, Math.max(0, o)));
       }
 
-      /* blockStart 起：n 从 rest_sec 逐秒降到 0，前端独立计时，不依赖后端 */
+      /* blockStart 起：n 从 rest_sec 逐秒降到 0。 */
       if (tSec >= TIMELINE.blockStart) {
         const n = Math.max(0, Math.ceil(payload.rest_sec - (tSec - TIMELINE.blockStart)));
         setCountdown((prev) => (prev === n ? prev : n));
@@ -142,7 +154,13 @@ export default function App() {
           {msg.restText(payload.rest_sec)}
         </p>
       </div>
-      <button className="exit-btn" type="button" onClick={exit}>
+      <button
+        className={`exit-btn${canExit ? " is-ready" : ""}`}
+        type="button"
+        onClick={exit}
+        tabIndex={canExit ? 0 : -1}
+        aria-hidden={!canExit}
+      >
         {pre}
         <span className="cd">{n}</span>
         {post}

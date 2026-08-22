@@ -5,7 +5,7 @@ import type { Lang } from "./i18n";
 export interface Settings {
   /** 提醒休息眼睛 master switch */
   enabled: boolean;
-  /** 提醒间隔 minutes, clamp 20..120 */
+  /** 提醒间隔 minutes, clamp 1..120 */
   interval_min: number;
   /** 休息时长 seconds, clamp 5..60 */
   rest_sec: number;
@@ -64,11 +64,10 @@ export type CheckResult =
   | { status: "current" }
   | { status: "failed" };
 
-/** Overlay timeline constants (seconds since overlay appear). */
+/** Overlay timeline constants. Natural end is derived from the configured rest duration. */
 export const TIMELINE = {
   warmupEnd: 5, // 0-5s: click-through, opacity ramps 0 -> set value
-  text2Start: 4, // 4-6s: second text fades in, cross-fading with text1 fade-out (4-5s)
+  text2Start: 5, // 5-6s: second text fades in, cross-fading with text1 fade-out (4-5s)
   blockStart: 8, // 8s: input blocked, Esc armed, audio starts, countdown starts
-  naturalEnd: 27, // 27s: auto close begins
   fadeOutMs: 1000, // close fade duration
 } as const;

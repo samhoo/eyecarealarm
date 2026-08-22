@@ -160,6 +160,7 @@
     cursor: pointer;
     transition: background 120ms ease, border-color 120ms ease;
   }
+  .exit-rest[hidden] { display: none; }
   .exit-rest:hover{
     background: rgba(34, 38, 46, 0.88);
     border-color: rgba(255, 255, 255, 0.5);
@@ -211,7 +212,7 @@
     <div class="veil-ui">
       <p class="phase" id="phaseWarm" data-od-id="phase-text-warmup">眼睛需要休息啦~</p>
       <p class="phase" id="phaseMain" data-od-id="phase-text-main">请看向至少 6 米（20 英尺）外远处物体 20 秒</p>
-      <button class="exit-rest" id="exitRest" data-od-id="exit-rest" type="button">退出 (Esc) <span class="cd" id="cdNum">27</span>秒</button>
+      <button class="exit-rest" id="exitRest" data-od-id="exit-rest" type="button">退出 (Esc) <span class="cd" id="cdNum">20</span>秒</button>
       <p class="sr-only" id="liveStatus" role="status"></p>
     </div>
   </div>
@@ -224,10 +225,11 @@
   var DEFAULTS = { overlay: 20, rest: 20, volume: 30, sound: '颂钵' };
 
   /* 时间线（秒）：0-5 预热遮罩 0%→目标透明度；文字一 0-2 渐显/4.5-5 渐隐；
-     文字二 6-8 渐显后常驻；8s 起播放音效 rest 秒（末 2s 渐隐）；27s 自动关闭 */
-  var TOTAL = 27, WARM_END = 5;
+     文字二 5-6 渐显后常驻；8s 起播放音效 rest 秒（末 2s 渐隐）；按设置时长结束 */
+  var WARM_END = 5;
   var T1_IN_END = 2, T1_HOLD_END = 4.5, T1_OUT_END = 5;
-  var T2_START = 6, T2_IN_END = 8;
+  var T2_START = 5, T2_IN_END = 6, BLOCK_START = 8;
+  var total = 0;
 
   function $(id){ return document.getElementById(id); }
   var veil = $('restOverlay'), dim = $('veilDim'),
@@ -344,36 +346,32 @@
     dim.style.opacity = String(t < WARM_END ? target * (t / WARM_END) : target);
 
     var o1 = 0;
-    if (t < T1_IN_END){ o1 = t / T1_IN_END; }
-    else if (t < T1_HOLD_END){ o1 = 1; }
-    else if (t < T1_OUT_END){ o1 = (T1_OUT_END - t) / (T1_OUT_END - T1_HOLD_END); }
-    p1.style.opacity = String(clamp(o1, 0, 1));
-
-    var o2 = t < T2_START ? 0 : (t < T2_IN_END ? (t - T2_START) / (T2_IN_END - T2_START) : 1);
+    var o2 = t < T2_START ? 0 : Math.min(1, (t - T2_START) / (T2_IN_END - T2_START));
     p2.style.opacity = String(clamp(o2, 0, 1));
 
     if (announced < 1){ live.textContent = '眼睛需要休息啦'; announced = 1; }
     if (announced < 2 && t >= T2_START){
-      live.textContent = '请看向至少 6 米（20 英尺）外远处物体 20 秒'; announced = 2;
+      live.textContent = '请看向至少 6 米（20 英尺）外远处物体 ' + cfg.rest + ' 秒'; announced = 2;
     }
 
-    if (!audioStarted && t >= T2_IN_END){ audioStarted = true; startAudio(cfg); }
+    if (!audioStarted && t >= BLOCK_START){ audioStarted = true; startAudio(cfg); }
+    cd.textContent = String(Math.max(0, Math.ceil(total - t)));
 
-    cd.textContent = String(Math.max(0, Math.ceil(TOTAL - t)));
-
-    if (t >= TOTAL){ finish('auto'); return; }
+    if (t >= total){ finish('auto'); return; }
     rafId = requestAnimationFrame(tick);
   }
 
   function startDemo(){
     cfg = readSettings();
+    total = BLOCK_START + cfg.rest;
+    p2.textContent = '请看向至少 6 米（20 英尺）外远处物体 ' + cfg.rest + ' 秒';
     running = true; audioStarted = false; announced = 0;
     status.textContent = '';
     startScreen.hidden = true;
     veil.hidden = false;
     dim.style.opacity = '0';
     p1.style.opacity = '0'; p2.style.opacity = '0';
-    cd.textContent = String(TOTAL);
+    cd.textContent = String(cfg.rest);
     ensureCtx();
     exitBtn.focus();
     t0 = performance.now();

@@ -478,7 +478,7 @@
 
   var DEFAULTS = {
     reminder: true,
-    interval: 20,   // min, clamp 20–120
+    interval: 20,   // min, clamp 1–120
     rest: 20,       // sec, clamp 5–60
     overlay: 20,    // %
     volume: 30,     // %
@@ -556,7 +556,7 @@
       else if (e.key === 'ArrowDown') { e.preventDefault(); input.value = clamp((Number(input.value) || min) - 1); commit(); }
     });
   }
-  makeStepper('input-interval', 'interval-up', 'interval-down', 'interval', 20, 120, '分钟');
+  makeStepper('input-interval', 'interval-up', 'interval-down', 'interval', 1, 120, '分钟');
   makeStepper('input-rest', 'rest-up', 'rest-down', 'rest', 5, 60, '秒');
 
   // ---------- sliders ----------
