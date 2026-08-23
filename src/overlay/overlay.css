@@ -69,11 +69,16 @@ body {
   will-change: opacity;
 }
 
-/* ---------- 退出按钮（右下角） ---------- */
-.exit-btn {
+/* ---------- 双按钮（右下角：2 分钟后提醒 + 退出） ---------- */
+.exit-actions {
   position: absolute;
   right: 28px;
   bottom: 28px;
+  display: flex;
+  gap: 10px;
+}
+
+.exit-btn {
   min-height: 44px;
   min-width: 44px;
   padding: 0 20px;
@@ -125,7 +130,7 @@ body {
   .phase {
     font-size: 22px;
   }
-  .exit-btn {
+  .exit-actions {
     right: 16px;
     bottom: 16px;
   }

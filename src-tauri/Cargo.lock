@@ -1136,7 +1136,7 @@ checksum = "af9673d8203fcb076b19dfd17e38b3d4ae9f44959416ea532ce72415a6020365"
 
 [[package]]
 name = "eye-care-alarm"
-version = "0.1.23"
+version = "0.1.24"
 dependencies = [
  "chrono",
  "core-foundation",

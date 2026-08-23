@@ -3,6 +3,7 @@ import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   checkUpdate,
+  getAdherence,
   getSettings,
   getTimerState,
   getUpdateState,
@@ -49,8 +50,8 @@ export default function App() {
   const [timer, setTimer] = useState<TimerState | null>(null);
   const [appVersion, setAppVersion] = useState<string>("");
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
-  /** 检查更新行的内联状态：idle → checking → available / current / failed(3s 回弹) */
   const [checkState, setCheckState] = useState<"idle" | "checking" | "available" | "current" | "failed">("idle");
+  const [showHint, setShowHint] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const checkRevertRef = useRef<number | undefined>(undefined);
 
@@ -80,6 +81,11 @@ export default function App() {
     getUpdateState()
       .then((u) => {
         if (!disposed) setUpdateInfo(u);
+      })
+      .catch(console.error);
+    getAdherence()
+      .then((show) => {
+        if (!disposed) setShowHint(show);
       })
       .catch(console.error);
     const unTick = onTimerTick((s) => setTimer(s));
@@ -147,6 +153,11 @@ export default function App() {
   };
 
   const langOptions: DropdownOption[] = LANGS.map((l) => ({ id: l, name: t(l).langName }));
+  const policyOptions: DropdownOption[] = [
+    { id: "gentle", name: msg.policyGentle, title: msg.policyHintGentle },
+    { id: "standard", name: msg.policyStandard, title: msg.policyHintStandard },
+    { id: "strict", name: msg.policyStrict, title: msg.policyHintStrict },
+  ];
 
   return (
     <>
@@ -223,6 +234,18 @@ export default function App() {
           </div>
 
           <div className="row">
+            <span className="label">{msg.policyLabel}</span>
+            <span className="spacer" />
+            <Dropdown
+              value={settings.policy}
+              options={policyOptions}
+              onPick={(id) => patch({ policy: id as Settings["policy"] })}
+            />
+          </div>
+
+          {showHint && <div className="hint">{msg.adherenceHint}</div>}
+
+          <div className="row">
             <span className="label">{msg.overlayOpacity}</span>
             <span className="spacer" />
             <Slider
@@ -262,6 +285,7 @@ export default function App() {
               onPick={(id) => patch({ lang: id as Settings["lang"] })}
             />
           </div>
+
 
           <div className="row">
             <span className="label">{msg.autostart}</span>

@@ -16,6 +16,10 @@ export const previewSound = (id: string) => invoke<void>("preview_sound", { id }
 export const quitApp = () => invoke<void>("quit_app");
 /** Overlay window reports user-initiated exit (Esc / button). */
 export const overlayExit = () => invoke<void>("overlay_exit");
+/** Overlay window reports the first-stage "snooze" (Esc / button). */
+export const overlaySnooze = () => invoke<void>("overlay_snooze");
+/** Whether the adherence hint should be shown (last 20 exits >50% "exited"). */
+export const getAdherence = () => invoke<boolean>("get_adherence");
 export const getVersion = () => invoke<string>("get_version");
 export const getUpdateState = () => invoke<UpdateInfo | null>("get_update_state");
 /** Manual check; always hits the network. */

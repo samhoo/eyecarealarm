@@ -20,6 +20,7 @@ pub struct Settings {
     pub volume: u32,
     pub sound: String,
     pub lang: String,
+    pub policy: String,
     pub autostart: bool,
 }
 
@@ -33,6 +34,7 @@ impl Default for Settings {
             volume: 30,
             sound: "singing-bowl-deep-sound".into(),
             lang: crate::detect_lang(),
+            policy: "standard".into(),
             autostart: true,
         }
     }
@@ -42,12 +44,16 @@ impl Settings {
     pub fn clamped(mut self) -> Self {
         const LANGS: [&str; 10] =
             ["zh-CN", "zh-TW", "en", "pt", "es", "ru", "fr", "ko", "de", "ja"];
+        const POLICIES: [&str; 3] = ["gentle", "standard", "strict"];
         self.interval_min = self.interval_min.clamp(1, 120);
         self.rest_sec = self.rest_sec.clamp(5, 60);
         self.overlay_opacity = self.overlay_opacity.min(100);
         self.volume = self.volume.min(100);
         if !LANGS.contains(&self.lang.as_str()) {
             self.lang = crate::detect_lang();
+        }
+        if !POLICIES.contains(&self.policy.as_str()) {
+            self.policy = "standard".into();
         }
         self
     }
@@ -63,6 +69,7 @@ pub struct SettingsPatch {
     pub volume: Option<u32>,
     pub sound: Option<String>,
     pub lang: Option<String>,
+    pub policy: Option<String>,
     pub autostart: Option<bool>,
 }
 
@@ -88,6 +95,9 @@ impl Settings {
         }
         if let Some(v) = p.lang {
             self.lang = v;
+        }
+        if let Some(v) = p.policy {
+            self.policy = v;
         }
         if let Some(v) = p.autostart {
             self.autostart = v;
@@ -164,6 +174,20 @@ pub fn load_stats(app: &AppHandle) -> Stats {
 
 pub fn save_stats(app: &AppHandle, s: &Stats) {
     write_json(stats_path(app), s);
+}
+
+fn adherence_path(app: &AppHandle) -> PathBuf {
+    app.path().app_data_dir().unwrap().join("adherence.json")
+}
+
+/// 依从性环形缓冲：每次遮罩结果（"completed" / "exited" / "snoozed"）按时间
+/// 顺序追加，最近 50 条，最新在末尾。
+pub fn load_adherence(app: &AppHandle) -> Vec<String> {
+    read_json::<Vec<String>>(adherence_path(app))
+}
+
+pub fn save_adherence(app: &AppHandle, events: &Vec<String>) {
+    write_json(adherence_path(app), events);
 }
 
 /// Directory holding user-imported sounds. Created on demand.

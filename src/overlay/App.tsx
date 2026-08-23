@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { onOverlayClose, onOverlayInputReady, onOverlayStart, overlayExit } from "../shared/ipc";
+import { onOverlayClose, onOverlayInputReady, onOverlayStart, overlayExit, overlaySnooze } from "../shared/ipc";
 import { t } from "../shared/i18n";
 import { TIMELINE, type OverlayPayload } from "../shared/types";
 
@@ -25,7 +25,6 @@ export default function App() {
   const rafRef = useRef(0);
 
   /** 只启动一次：onOverlayStart 事件与 getSettings 快照，先到者为准 */
-  /** 窗口常驻复用：每次 overlay-start 事件都重置并重新跑完整时间线 */
   const start = useCallback((p: OverlayPayload) => {
     exitedRef.current = false;
     closedRef.current = false;
@@ -36,7 +35,14 @@ export default function App() {
     setPayload(p); // 新对象 → rAF effect cleanup 后重跑，时间线归零
   }, []);
 
-  /** Escape / 退出按钮仅在正式阶段开始后可响应。 */
+  /** 「2 分钟后提醒」按钮：仅在正式阶段开始后可响应。 */
+  const snooze = useCallback(() => {
+    if (!canExitRef.current || exitedRef.current) return;
+    exitedRef.current = true;
+    void overlaySnooze();
+  }, []);
+
+  /** 「退出」按钮 / Esc 键：仅在正式阶段开始后可响应。 */
   const exit = useCallback(() => {
     if (!canExitRef.current || exitedRef.current) return;
     exitedRef.current = true;
@@ -77,7 +83,7 @@ export default function App() {
       unlistens.forEach((u) => u());
       window.removeEventListener("keydown", onKey);
     };
-  }, [start, exit]);
+  }, [start, snooze, exit]);
 
   /* 时间线 rAF 驱动：透明度逐帧写入 DOM（60fps 无跳变），倒计时数字每秒走 setState */
   useEffect(() => {
@@ -133,8 +139,9 @@ export default function App() {
   if (!payload) return null;
   const msg = t(payload.lang);
   const n = countdown ?? payload.rest_sec;
-  /* exitBtn 是整句文案；按数字拆分以便倒计时数字用 accent 绿 */
-  const [pre, post = ""] = msg.exitBtn(n).split(String(n));
+  /* 双按钮：2 分钟后提醒 + 退出；按数字拆分以便倒计时数字用 accent 绿 */
+  const [snoozePre, snoozePost = ""] = msg.snoozeBtn(n).split(String(n));
+  const [exitPre, exitPost = ""] = msg.exitBtn(n).split(String(n));
 
   return (
     <div
@@ -154,17 +161,30 @@ export default function App() {
           {msg.restText(payload.rest_sec)}
         </p>
       </div>
-      <button
-        className={`exit-btn${canExit ? " is-ready" : ""}`}
-        type="button"
-        onClick={exit}
-        tabIndex={canExit ? 0 : -1}
-        aria-hidden={!canExit}
-      >
-        {pre}
-        <span className="cd">{n}</span>
-        {post}
-      </button>
+      <div className="exit-actions">
+        <button
+          className={`exit-btn${canExit ? " is-ready" : ""}`}
+          type="button"
+          onClick={snooze}
+          tabIndex={canExit ? 0 : -1}
+          aria-hidden={!canExit}
+        >
+          {snoozePre}
+          <span className="cd">{n}</span>
+          {snoozePost}
+        </button>
+        <button
+          className={`exit-btn${canExit ? " is-ready" : ""}`}
+          type="button"
+          onClick={exit}
+          tabIndex={canExit ? 0 : -1}
+          aria-hidden={!canExit}
+        >
+          {exitPre}
+          <span className="cd">{n}</span>
+          {exitPost}
+        </button>
+      </div>
     </div>
   );
 }

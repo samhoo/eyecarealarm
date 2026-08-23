@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 export interface DropdownOption {
   id: string;
   name: string;
+  /** 悬停提示；缺省时回退为 name。 */
+  title?: string;
 }
 
 interface DropdownProps {
@@ -131,7 +133,7 @@ export function Dropdown({ value, options, onPick }: DropdownProps) {
             role="option"
             aria-selected={opt.id === value}
             className={opt.id === value ? "selected" : undefined}
-            title={opt.name}
+            title={opt.title ?? opt.name}
             tabIndex={open ? 0 : -1}
             onClick={(e) => {
               e.stopPropagation();

@@ -28,6 +28,19 @@ use crate::timer;
 pub const BLOCK_START_SEC: u64 = 8;
 pub const FADE_MS: u64 = 1000;
 
+/// 遮罩关闭后的三种去向：决定关闭后倒计时如何设定 + 是否置/清"二次提醒"标志。
+enum CloseKind {
+    /// 自然走完：计数 +1、重置整段、清二次提醒。
+    Natural,
+    /// 首次点击「稍后提醒」：设 2 分钟、置二次提醒。
+    Snooze,
+    /// 二次点击「退出」：重置整段、清二次提醒。
+    Exit,
+}
+
+/// 依从性环形缓冲长度。
+const ADHERENCE_MAX: usize = 50;
+
 #[derive(Default)]
 pub struct OverlayManager {
     active: AtomicBool,
@@ -134,7 +147,6 @@ pub fn start(app: &AppHandle) {
             s.sound.clone(),
         )
     };
-
     let app_show = app.clone();
     let _ = app.run_on_main_thread(move || {
         let state = app_show.state::<crate::AppState>();
@@ -198,21 +210,41 @@ pub fn start(app: &AppHandle) {
             }
         }
         thread::sleep(rest_duration);
-        close(&app2, true);
+        close(&app2, CloseKind::Natural);
     });
 }
 
-/// Esc / exit-button path from any overlay window.
+/// 二次弹窗的 Esc / 退出按钮路径。
 pub fn user_exit(app: &AppHandle) {
     if !app.state::<crate::AppState>().overlay.is_active() {
         return;
     }
-    close(app, false);
+    close(app, CloseKind::Exit);
 }
 
-/// Shared close path: fade out, hide, optionally count the rest.
+/// 首次弹窗的 Esc / 稍后提醒按钮路径。
+pub fn user_snooze(app: &AppHandle) {
+    if !app.state::<crate::AppState>().overlay.is_active() {
+        return;
+    }
+    close(app, CloseKind::Snooze);
+}
+
+/// 依从性环形缓冲：追加一条遮罩结果并裁剪到最近 50 条，持久化到 adherence.json。
+fn record_adherence(app: &AppHandle, kind: &str) {
+    let state = app.state::<crate::AppState>();
+    let mut events = state.adherence.lock();
+    events.push(kind.to_string());
+    if events.len() > ADHERENCE_MAX {
+        let excess = events.len() - ADHERENCE_MAX;
+        events.drain(0..excess);
+    }
+    settings::save_adherence(app, &events);
+}
+
+/// Shared close path: fade out, hide, then apply the close-kind side effects.
 /// Safe to call twice (timeline thread + early exit race).
-fn close(app: &AppHandle, natural: bool) {
+fn close(app: &AppHandle, kind: CloseKind) {
     let state = app.state::<crate::AppState>();
     if state.overlay.closing.swap(true, Ordering::SeqCst) {
         return;
@@ -234,13 +266,25 @@ fn close(app: &AppHandle, natural: bool) {
             }
         }
     });
-    state.overlay.active.store(false, Ordering::SeqCst);
-
-    if natural {
-        let mut stats = state.stats.lock();
-        stats.bump();
-        settings::save_stats(app, &stats);
+    // 先改倒计时/标志，再置 active=false：避免计时线程在 active 已清、
+    // 倒计时未改的瞬间用旧值（归零）触发新一轮遮罩。
+    match kind {
+        CloseKind::Natural => {
+            let mut stats = state.stats.lock();
+            stats.bump();
+            settings::save_stats(app, &stats);
+            record_adherence(app, "completed");
+            timer::reset_remaining(&state);
+        }
+        CloseKind::Snooze => {
+            record_adherence(app, "snoozed");
+            state.remaining_sec.store(timer::SNOOZE_SEC, Ordering::SeqCst);
+        }
+        CloseKind::Exit => {
+            record_adherence(app, "exited");
+            timer::reset_remaining(&state);
+        }
     }
-    timer::reset_remaining(&state);
+    state.overlay.active.store(false, Ordering::SeqCst);
     timer::emit_tick(app);
 }

@@ -16,8 +16,12 @@ export interface Settings {
   /** sound id: "none" | file stem of a wav/mp3 in builtin or user sound dir */
   sound: string;
   lang: Lang;
+  /** 提醒策略：温和 / 标准 / 严格 */
+  policy: Policy;
   autostart: boolean;
 }
+
+export type Policy = "gentle" | "standard" | "strict";
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -27,8 +31,10 @@ export const DEFAULT_SETTINGS: Settings = {
   volume: 30,
   sound: "singing-bowl-deep-sound",
   lang: "zh-CN",
+  policy: "standard",
   autostart: true,
 };
+
 
 export interface TimerState {
   remaining_sec: number;

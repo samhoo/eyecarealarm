@@ -34,6 +34,8 @@ pub struct AppState {
     /// 文件对话框（「+ 我的音效」）打开期间为 true：面板让出 key window
     /// 是预期行为，此时不应触发失焦自动隐藏。
     pub dialog_open: AtomicBool,
+    /// 依从性环形缓冲（completed / exited / snoozed），最近 50 条，最新在末尾。
+    pub adherence: Mutex<Vec<String>>,
     /// None on machines without an audio device; playback is then a no-op.
     pub audio: Option<std::sync::Arc<audio::Audio>>,
     /// Last update-check result (persisted in update.json); drives the red dot.
@@ -54,12 +56,12 @@ impl AppState {
             remaining_sec: AtomicI64::new(remaining),
             overlay: Default::default(),
             dialog_open: AtomicBool::new(false),
+            adherence: Mutex::new(settings::load_adherence(app)),
             audio,
             update: Mutex::new(update::load(app)),
         }
     }
 }
-
 #[derive(Clone, Serialize)]
 pub struct OverlayPayload {
     pub overlay_opacity: u32,
@@ -200,6 +202,23 @@ fn overlay_exit(app: AppHandle) {
 }
 
 #[tauri::command]
+fn overlay_snooze(app: AppHandle) {
+    overlay::user_snooze(&app);
+}
+
+/// 依从性提示：最近 20 条遮罩结果中"提前退出"占比 >50%（且样本 ≥20）时返回 true。
+#[tauri::command]
+fn get_adherence(state: tauri::State<'_, AppState>) -> bool {
+    let events = state.adherence.lock();
+    if events.len() < 20 {
+        return false;
+    }
+    let recent = &events[events.len() - 20..];
+    let exited = recent.iter().filter(|e| e.as_str() == "exited").count();
+    exited * 2 > recent.len()
+}
+
+#[tauri::command]
 fn quit_app(app: AppHandle) {
     app.exit(0);
 }
@@ -264,6 +283,8 @@ fn main() {
             import_sound,
             preview_sound,
             overlay_exit,
+            overlay_snooze,
+            get_adherence,
             quit_app,
             get_version,
             get_update_state,

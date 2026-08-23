@@ -199,6 +199,14 @@ body {
 .stepper .step-btns svg { width: 8px; height: 8px; }
 .unit { margin-left: 6px; width: 26px; flex: none; color: var(--fg); font-size: 12px; }
 
+/* 依从性提示：灰色一行，只展示不干预 */
+.hint {
+  padding: 2px 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 /* slider */
 .pct {
   font-family: var(--mono);
